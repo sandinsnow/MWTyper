@@ -1,22 +1,28 @@
 #!/usr/bin/env node
 /**
- * lockfile 精准移植：把「完整解析版」里的 @rollup/rollup-* 平台可选依赖条目
+ * lockfile 精准移植：把「完整解析版」里缺失的**平台原生二进制**条目
  * 移植回「保守版」，其余内容一字不动。
  *
- * 背景：
- *   项目的 pnpm-lock.yaml 是在**离线**环境生成的 —— store 里没有的
- *   可选依赖（rollup 的 22 个平台原生二进制）被 pnpm 整体丢弃，
- *   于是 CI 上 `pnpm install --frozen-lockfile` 装不出
- *   @rollup/rollup-win32-x64-msvc，`vite build` 直接崩：
- *     Error: Cannot find module @rollup/rollup-win32-x64-msvc
+ * 背景（CI 连环失败的共同根因）：
+ *   项目的 pnpm-lock.yaml 是在**离线**环境生成的 —— store 里没有的可选依赖
+ *   （rollup 的 22 个平台二进制、@tauri-apps/cli 的平台二进制…）被 pnpm
+ *   整体丢弃，于是 lockfile 里这些包一个都没有。
+ *   CI 上 `pnpm install --frozen-lockfile` 装不出来：
+ *     Error: Cannot find module @rollup/rollup-win32-x64-msvc      → vite build 崩
+ *     Error: Cannot find module @tauri-apps/cli-win32-x64-msvc    → tauri build 崩
  *
  * 为什么不用 `pnpm update --lockfile-only` 的完整产物：
  *   全量 update 会把间接依赖一起升上去 —— 实测 @tiptap/extension-* 从
  *   3.22.1 漂到 3.35.0（跨 13 个 minor），违反项目「统一 pin 3.22.1 家族」
  *   的既定决策，且本地 node_modules 与之不一致 → 本地绿灯、CI 红灯。
  *
- * 所以走「外科手术」：只搬 rollup 平台包，版本由 pnpm-workspace.yaml 的
- * overrides 钉死在 4.52.2（与本地实测一致）。
+ * 所以走「外科手术」：
+ *   1) 逐个主块（如 rollup@4.52.2、@tauri-apps/cli@2.11.4）比对，
+ *      若完整版里同名同版本的主块带 optionalDependencies，而保守版缺，
+ *      就把**保守版的 dependencies + 完整版的 optionalDependencies** 拼起来；
+ *   2) 再把这些 optionalDependencies 指向的平台包条目
+ *      （packages 段 + snapshots 段）移植进保守版。
+ *   版本由 pnpm-workspace.yaml 的 overrides 钉死，不随 update 漂移。
  *
  * 用法：node scripts/merge-lockfile-platform-packs.mjs <full.lock> <target.lock>
  */
@@ -64,10 +70,6 @@ function blocksIn(lines, start, end) {
   return out;
 }
 
-function findBlock(blocks, key) {
-  return blocks.find((b) => b.key === key);
-}
-
 /** 在 blocks 里按 key 升序找插入点（返回要插入到哪个块之前） */
 function insertIndex(blocks, key) {
   for (let i = 0; i < blocks.length; i++) {
@@ -76,60 +78,124 @@ function insertIndex(blocks, key) {
   return blocks.length;
 }
 
-const full = readFileSync(fullPath, "utf-8").split("\n");
-const target = readFileSync(targetPath, "utf-8").split("\n");
+/** 取块内 optionalDependencies 段的行（含段头） */
+function optionalDepsLines(chunk) {
+  const i = chunk.findIndex((l) => /^ {4}optionalDependencies:$/.test(l));
+  if (i < 0) return null;
+  return chunk.slice(i);
+}
+
+/**
+ * 取块内 optionalDependencies 之前的所有行（块头 + dependencies 段）。
+ *
+ * ⚠️ 单行块（`'x@1.0.0': {}`）必须改写成块头形式（`'x@1.0.0':`）——
+ * 否则后面接上缩进的 optionalDependencies 段会变成
+ *   'x@1.0.0': {}
+ *     optionalDependencies:
+ * YAML 解析直接报错「did not find expected key」。
+ */
+function headLines(chunk) {
+  const i = chunk.findIndex((l) => /^ {4}optionalDependencies:$/.test(l));
+  const head = i < 0 ? chunk.slice() : chunk.slice(0, i);
+  if (head.length && /^ {2}\S.*:\s*\{\}\s*$/.test(head[0])) {
+    head[0] = head[0].replace(/:\s*\{\}\s*$/, ":");
+  }
+  return head;
+}
+
+/**
+ * 从 optionalDependencies 段里解析出被引用的**完整 key**（含版本号）。
+ *
+ * ⚠️ 必须拼成 `包名@版本` 才能与 packages/snapshots 段的 key 对上 ——
+ * 段里的 key 带版本（`@rollup/rollup-x64-msvc@4.52.2`），而 optionalDependencies
+ * 段里是「包名: 版本」两列。只取包名会一个都匹配不上（实测补齐数为 0）。
+ */
+function referencedKeys(chunk) {
+  const seg = optionalDepsLines(chunk);
+  if (!seg) return [];
+  const keys = [];
+  for (const l of seg.slice(1)) {
+    const m = /^ {6}'?([^']+?)'?:\s*(.+)$/.exec(l);
+    if (m) keys.push(m[1] + "@" + m[2].trim());
+  }
+  return keys;
+}
+
+const full = readFileSync(fullPath, "utf-8").split(/\r?\n/);
+const target = readFileSync(targetPath, "utf-8").split(/\r?\n/);
 
 const fSec = splitSections(full);
 const tSec = splitSections(target);
 
 const fPkg = blocksIn(full, fSec.pkgIdx + 1, fSec.snapIdx);
 const fSnap = blocksIn(full, fSec.snapIdx + 1, full.length);
+const fPkgMap = new Map(fPkg.map((b) => [b.key, b]));
+const fSnapMap = new Map(fSnap.map((b) => [b.key, b]));
 
-const ROLLUP_PKG = fPkg.filter((b) => b.key.startsWith("@rollup/rollup-"));
-const ROLLUP_SNAP = fSnap.filter((b) => b.key.startsWith("@rollup/rollup-"));
-const ROLLUP_SNAP_MAIN = findBlock(fSnap, "rollup@4.52.2");
+const tPkg = blocksIn(target, tSec.pkgIdx + 1, tSec.snapIdx);
+const tSnap = blocksIn(target, tSec.snapIdx + 1, target.length);
+const tPkgKeys = new Set(tPkg.map((b) => b.key));
+const tSnapKeys = new Set(tSnap.map((b) => b.key));
 
-if (!ROLLUP_PKG.length) {
-  console.error("完整版 lockfile 里没有 @rollup/rollup-* 条目 —— 源文件不对");
-  process.exit(1);
+// ── 1) 找出「保守版缺平台包」的主块 ──────────────────────────────────────
+const needPlatformKeys = new Set();
+const patchedMain = [];
+
+for (const tb of tSnap) {
+  const fb = fSnapMap.get(tb.key);
+  if (!fb) continue; // 完整版里没有同名同版本的主块 → 不动
+  const fChunk = full.slice(fb.start, fb.end);
+  if (!optionalDepsLines(fChunk)) continue;
+  const refs = referencedKeys(fChunk);
+  const missing = refs.filter((k) => !tPkgKeys.has(k) || !tSnapKeys.has(k));
+  if (!missing.length) continue;
+  for (const k of missing) needPlatformKeys.add(k);
+  patchedMain.push({ key: tb.key, tb, fChunk, missing });
 }
-if (!ROLLUP_SNAP_MAIN) {
-  console.error("完整版 lockfile 里没有 rollup@4.52.2 的 snapshots 块");
-  process.exit(1);
+
+console.log(`需要补齐平台包的主块：${patchedMain.length} 个`);
+for (const p of patchedMain) console.log(`  ${p.key}  缺 ${p.missing.length} 个平台包`);
+
+// ── 2) 主块替换：保守版的 dependencies + 完整版的 optionalDependencies ──
+const mainReplacements = new Map();
+for (const p of patchedMain) {
+  const tChunk = target.slice(p.tb.start, p.tb.end);
+  mainReplacements.set(p.key, [...headLines(tChunk), ...optionalDepsLines(p.fChunk)]);
 }
 
-console.log(`完整版中：packages 段 ${ROLLUP_PKG.length} 个平台包，snapshots 段 ${ROLLUP_SNAP.length} 个`);
-
-// ── 1) packages 段：插入平台包条目 ──────────────────────────────────────
-let tPkg = blocksIn(target, tSec.pkgIdx + 1, tSec.snapIdx);
-const added = [];
-for (const b of ROLLUP_PKG) {
-  if (findBlock(tPkg, b.key)) continue; // 已有
-  const at = insertIndex(tPkg, b.key);
-  const chunk = full.slice(b.start, b.end);
-  tPkg.splice(at, 0, { key: b.key, chunk });
-  added.push(b.key);
+// ── 3) 移植平台包条目（packages 段 + snapshots 段）────────────────────────
+const addPkg = [];
+for (const k of needPlatformKeys) {
+  const fb = fPkgMap.get(k);
+  if (fb && !tPkgKeys.has(k)) addPkg.push({ key: k, chunk: full.slice(fb.start, fb.end) });
 }
-// 重建 packages 段文本
-const pkgChunk = tPkg.flatMap((b) => b.chunk ?? target.slice(b.start, b.end));
-
-// ── 2) snapshots 段：插入平台包 + 替换 rollup 主块 ──────────────────────
-let tSnap = blocksIn(target, tSec.snapIdx + 1, target.length);
-for (const b of ROLLUP_SNAP) {
-  if (findBlock(tSnap, b.key)) continue;
-  const at = insertIndex(tSnap, b.key);
-  tSnap.splice(at, 0, { key: b.key, chunk: full.slice(b.start, b.end) });
+const addSnap = [];
+for (const k of needPlatformKeys) {
+  const fb = fSnapMap.get(k);
+  if (fb && !tSnapKeys.has(k)) addSnap.push({ key: k, chunk: full.slice(fb.start, fb.end) });
 }
-// 替换 rollup@4.52.2 主块（把完整的 optionalDependencies 换上）
-const mainIdx = tSnap.findIndex((b) => b.key === "rollup@4.52.2");
-if (mainIdx >= 0) {
-  tSnap[mainIdx] = { key: "rollup@4.52.2", chunk: full.slice(ROLLUP_SNAP_MAIN.start, ROLLUP_SNAP_MAIN.end) };
-}
-const snapChunk = tSnap.flatMap((b) => b.chunk ?? target.slice(b.start, b.end));
 
-// ── 3) 拼回 ──────────────────────────────────────────────────────────────
+// 插入（按 key 升序）
+for (const item of addPkg) {
+  const at = insertIndex(tPkg, item.key);
+  tPkg.splice(at, 0, item);
+}
+for (const item of addSnap) {
+  const at = insertIndex(tSnap, item.key);
+  tSnap.splice(at, 0, item);
+}
+// 主块替换（在插入之后做，避免下标失效）
+for (const p of patchedMain) {
+  const idx = tSnap.findIndex((b) => b.key === p.key);
+  if (idx >= 0) tSnap[idx] = { key: p.key, chunk: mainReplacements.get(p.key) };
+}
+
+// ── 4) 拼回 ──────────────────────────────────────────────────────────────
 // 注意：pkgChunk / snapChunk 已经是各自整段的内容（含块间空行），
 // 所以这里**不能再**把 target 的原段落拼进去 —— 那会造成整段重复。
+const pkgChunk = tPkg.flatMap((b) => b.chunk ?? target.slice(b.start, b.end));
+const snapChunk = tSnap.flatMap((b) => b.chunk ?? target.slice(b.start, b.end));
+
 const out = [
   ...target.slice(0, tSec.pkgIdx + 1), // 到 "packages:" 行
   ...pkgChunk, // packages 段完整内容
@@ -138,8 +204,7 @@ const out = [
 ];
 writeFileSync(targetPath, out.join("\n"), "utf-8");
 
-// 自检：重复 key 必须为空（YAML 映射不允许重复键，pnpm 会直接报
-// ERR_PNPM_BROKEN_LOCKFILE）
+// ── 5) 自检：重复 key 必须为空 ───────────────────────────────────────────
 const pkgStart = tSec.pkgIdx + 1;
 const snapStart = pkgStart + pkgChunk.length + 1;
 const seen = new Set();
@@ -158,5 +223,5 @@ if (dupes.length) {
   process.exit(1);
 }
 
-console.log(`已插入 ${added.length} 个平台包条目到 packages 段；rollup 主块的 optionalDependencies 已更新`);
+console.log(`已补齐 ${addPkg.length} 个 packages 条目、${addSnap.length} 个 snapshots 条目`);
 console.log("自检：无重复 key");
