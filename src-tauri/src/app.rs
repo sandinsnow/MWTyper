@@ -69,6 +69,74 @@ pub fn update_manifest_path() -> String {
     data_dir().join("update-manifest.json").to_string_lossy().to_string()
 }
 
+/// 校验一个待打开的外部链接：只放行 http/https/mailto。
+///
+/// 裸的 `cmd /c start` 方案会把 URL 拼进命令行，`&` `|` `^` 等字符会被 shell 解释；
+/// 而 `ShellExecuteW` 直接把字符串交给系统协议处理器，不经 shell，因此这些字符
+/// 不会被二次解释 —— 仍要拒绝**控制字符**与**裸引号**：
+/// 协议处理器最终可能把 URL 交给某个命令行程序，裸引号会破坏它的参数引用。
+/// 合法 URL 里这两类字符都必须百分号编码，故不会误伤正常链接。
+fn validate_external_url(url: &str) -> Result<String, String> {
+    let trimmed = url.trim();
+    let lower = trimmed.to_ascii_lowercase();
+    let scheme_ok = lower.starts_with("https://")
+        || lower.starts_with("http://")
+        || lower.starts_with("mailto:");
+    if !scheme_ok {
+        return Err("仅支持 http/https/mailto 链接".into());
+    }
+    if trimmed
+        .chars()
+        .any(|c| c.is_ascii_control() || c == '"')
+    {
+        return Err("链接含非法字符（控制字符或未编码的引号）".into());
+    }
+    Ok(trimmed.to_string())
+}
+
+/// 在系统默认浏览器打开外部链接（「检查更新 → 打开下载页」）。
+///
+/// 用 `ShellExecuteW` 直接交给系统协议处理器，**不经 cmd/shell**，
+/// 因此 URL 里的 `& ? = % #` 既不会被解释成命令，也不需要字符集白名单。
+///
+/// `async` 属性：启动浏览器可能阻塞数百毫秒，不能占住主线程。
+#[tauri::command(async)]
+pub fn open_external(url: String) -> Result<(), String> {
+    let trimmed = validate_external_url(&url)?;
+    #[cfg(windows)]
+    {
+        use std::os::windows::ffi::OsStrExt;
+        use winapi::um::shellapi::ShellExecuteW;
+        use winapi::um::winuser::SW_SHOWNORMAL;
+
+        let wide = |s: &str| -> Vec<u16> {
+            std::ffi::OsStr::new(s).encode_wide().chain(std::iter::once(0)).collect()
+        };
+        let op = wide("open");
+        let target = wide(&trimmed);
+        let rc = unsafe {
+            ShellExecuteW(
+                std::ptr::null_mut(),
+                op.as_ptr(),
+                target.as_ptr(),
+                std::ptr::null(),
+                std::ptr::null(),
+                SW_SHOWNORMAL,
+            )
+        };
+        // 返回值 >32 表示成功；<=32 是错误码（如 31 = 无关联程序）。
+        if (rc as isize) <= 32 {
+            return Err(format!("打开链接失败（代码 {}）", rc as isize));
+        }
+        Ok(())
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = trimmed;
+        Err("当前平台暂不支持打开外部链接".into())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -101,5 +169,60 @@ mod tests {
     fn manifest_reports_bad_json() {
         let e = parse_manifest("{ not json").unwrap_err();
         assert!(e.contains("更新清单格式有误"), "{}", e);
+    }
+
+    /// 只放行 http/https/mailto —— 其余协议（javascript/data/file/vbscript…）一律拒绝。
+    #[test]
+    fn external_url_rejects_non_web_schemes() {
+        for bad in [
+            "javascript:alert(1)",
+            "JaVaScRiPt:alert(1)",
+            "data:text/html,<script>alert(1)</script>",
+            "file:///C:/Windows/win.ini",
+            "vbscript:msgbox(1)",
+            "//evil.example/a",
+            "",
+        ] {
+            assert!(
+                validate_external_url(bad).is_err(),
+                "应拒绝：{bad:?}"
+            );
+        }
+    }
+
+    /// 控制字符与裸引号一律拒绝（协议处理器可能把 URL 交给命令行程序）。
+    ///
+    /// 注意：**首尾**的空白会被裁掉（用户从剪贴板粘贴时常常带尾随换行），
+    /// 因此只有出现在 URL **中间**的换行才是注入尝试。
+    #[test]
+    fn external_url_rejects_control_chars_and_quotes() {
+        for bad in [
+            "https://ok.example/\r\nX-Injected: 1",
+            "https://ok.example/\" -- \"",
+            "https://ok.example/\u{0}",
+            "https://ok.example/a\nb",
+        ] {
+            assert!(
+                validate_external_url(bad).is_err(),
+                "应拒绝：{bad:?}"
+            );
+        }
+    }
+
+    /// 合法链接放行，且首尾空白被裁掉（含尾随换行）。
+    #[test]
+    fn external_url_accepts_web_links() {
+        assert_eq!(
+            validate_external_url("  https://github.com/sandinsnow/MWTyper/releases/latest  ").unwrap(),
+            "https://github.com/sandinsnow/MWTyper/releases/latest"
+        );
+        assert_eq!(
+            validate_external_url("https://ok.example/path\n").unwrap(),
+            "https://ok.example/path"
+        );
+        assert_eq!(
+            validate_external_url("mailto:someone@example.com").unwrap(),
+            "mailto:someone@example.com"
+        );
     }
 }

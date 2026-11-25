@@ -4,6 +4,7 @@ import { useModal } from "../ui/Modal";
 import { MARKDOWN_REF, type MarkdownRefItem } from "./markdown-ref";
 import { shortcutGroups } from "./shortcuts";
 import { api, type AppInfo, type UpdateManifest } from "../ipc";
+import { compareVersions, fetchLatest, RELEASES_PAGE, type LatestInfo } from "../update";
 
 export type HelpSection = "markdown" | "shortcuts" | "update" | "about";
 
@@ -25,17 +26,7 @@ const SECTIONS: { id: HelpSection; label: string; icon: string }[] = [
 ];
 
 /** 比较两个语义化版本号：a > b 返回 1，a < b 返回 -1，相等返回 0 */
-export function compareVersions(a: string, b: string): number {
-  const pa = String(a).replace(/^v/, "").split(/[.\-+]/).map((x) => parseInt(x, 10) || 0);
-  const pb = String(b).replace(/^v/, "").split(/[.\-+]/).map((x) => parseInt(x, 10) || 0);
-  const n = Math.max(pa.length, pb.length);
-  for (let i = 0; i < n; i++) {
-    const da = pa[i] ?? 0;
-    const db = pb[i] ?? 0;
-    if (da !== db) return da > db ? 1 : -1;
-  }
-  return 0;
-}
+export { compareVersions };
 
 /**
  * 帮助中心：Markdown 速查 / 快捷键 / 检查更新 / 关于。
@@ -47,35 +38,36 @@ export default function HelpCenter({ open, section, onSection, onClose, editor, 
   const [manifest, setManifest] = useState<UpdateManifest | null>(null);
   const [manifestPath, setManifestPath] = useState("");
   const [manifestError, setManifestError] = useState("");
+  const [latest, setLatest] = useState<LatestInfo | null>(null);
+  const [checkError, setCheckError] = useState("");
   const [checking, setChecking] = useState(false);
   const [checkedAt, setCheckedAt] = useState<string>("");
   const navRef = useRef<HTMLDivElement>(null);
   const { onKeyDown } = useModal(onClose, navRef);
 
-  // 打开时拉取应用信息与更新清单
+  // 打开时拉取应用信息与本机更新清单路径（**不自动联网** —— 联网检查由用户主动触发）。
   useEffect(() => {
     if (!open) return;
     let alive = true;
     void api.appInfo().then((i) => { if (alive) setInfo(i); }).catch(() => {});
     void api.updateManifestPath().then((p) => { if (alive) setManifestPath(p); }).catch(() => {});
+    // 本机更新清单是**离线兜底**：网络不通时仍能告诉用户「本机记录的版本是多少」。
     void api.readUpdateManifest()
       .then((m) => {
         if (!alive) return;
         setManifest(m);
         setManifestError("");
-        setCheckedAt(new Date().toLocaleString("zh-CN"));
       })
       .catch((e) => {
         if (!alive) return;
         setManifest(null);
         setManifestError(String(e));
-        setCheckedAt(new Date().toLocaleString("zh-CN"));
       });
     return () => { alive = false; };
   }, [open]);
 
   const groups = useMemo(() => shortcutGroups(), []);
-  const hasUpdate = !!info && !!manifest && compareVersions(manifest.version, info.version) > 0;
+  const hasUpdate = !!info && !!latest && compareVersions(latest.version, info.version) > 0;
 
   const insert = (item: MarkdownRefItem) => {
     if (!editor || !item.template) return;
@@ -83,16 +75,43 @@ export default function HelpCenter({ open, section, onSection, onClose, editor, 
     onNotify("success", `已插入：${item.syntax.split("\n")[0]}`);
   };
 
-  const recheck = () => {
+  /**
+   * 检查远端是否有新版本：查 GitHub Releases 的最新正式版，与本地版本比对。
+   * 断网/被墙时 fetch 可能长时间挂起 → 10 秒超时兜底（AbortController）。
+   */
+  const recheck = async () => {
     setChecking(true);
-    setManifestError("");
-    void api.readUpdateManifest()
-      .then((m) => {
-        setManifest(m);
-        setCheckedAt(new Date().toLocaleString("zh-CN"));
-      })
-      .catch((e) => setManifestError(String(e)))
-      .finally(() => setChecking(false));
+    setCheckError("");
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 10000);
+    try {
+      const r = await fetchLatest(ctrl.signal);
+      setLatest(r);
+      setCheckedAt(new Date().toLocaleString("zh-CN"));
+      if (!r.version) {
+        setCheckError("远端返回的版本号无法解析");
+      }
+    } catch (e) {
+      setLatest(null);
+      setCheckedAt(new Date().toLocaleString("zh-CN"));
+      setCheckError(
+        ctrl.signal.aborted
+          ? "检查超时（10 秒），请确认网络连接后重试"
+          : `无法访问 GitHub：${String((e as Error)?.message ?? e)}`
+      );
+    } finally {
+      clearTimeout(timer);
+      setChecking(false);
+    }
+  };
+
+  /** 在系统默认浏览器打开下载页（不用 <a target="_blank"> —— Tauri 里会在应用内开新窗口）。 */
+  const openReleases = async () => {
+    try {
+      await api.openExternal(RELEASES_PAGE);
+    } catch (e) {
+      onNotify("error", `打开下载页失败：${String(e)}`);
+    }
   };
 
   const copyUrl = async (url: string) => {
@@ -203,54 +222,70 @@ export default function HelpCenter({ open, section, onSection, onClose, editor, 
                     <b>{info?.buildTime ? formatBuildTime(info.buildTime) : "—"}</b>
                   </div>
                   <div className="help-update-row">
+                    <span>远端最新版</span>
+                    <b>{latest ? `v${latest.version}` : "尚未检查"}</b>
+                  </div>
+                  <div className="help-update-row">
                     <span>上次检查</span>
                     <b>{checkedAt || "尚未检查"}</b>
                   </div>
                 </div>
 
+                <div className="help-update-actions">
+                  <button className="tb-btn" type="button" onClick={() => void recheck()} disabled={checking}>
+                    {checking ? "检查中…" : "检查远端更新"}
+                  </button>
+                  <button className="tb-btn" type="button" onClick={() => void openReleases()}>
+                    打开发布页
+                  </button>
+                </div>
+
+                {checkError && (
+                  <div className="help-warn">
+                    {checkError}
+                    {manifest && (
+                      <div>
+                        本机更新清单记录：v{manifest.version}（{manifestPath || "%APPDATA%\\MWTyper\\update-manifest.json"}）
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {manifestError && (
-                  <div className="help-warn">更新清单无法解析：{manifestError}</div>
+                  <div className="help-warn">本机更新清单无法解析：{manifestError}</div>
                 )}
 
                 {hasUpdate ? (
                   <div className="help-newver">
-                    <div className="help-newver-head">发现新版本 {manifest.version}</div>
-                    {manifest.notes && <pre className="help-notes">{manifest.notes}</pre>}
-                    {manifest.publishedAt && <div className="help-pub">发布于 {manifest.publishedAt}</div>}
-                    {manifest.url && (
-                      <div className="help-update-actions">
-                        <button className="tb-btn" type="button" onClick={() => void copyUrl(manifest.url ?? "")}>
+                    <div className="help-newver-head">发现新版本 {latest!.version}</div>
+                    {latest!.notes && <pre className="help-notes">{latest!.notes}</pre>}
+                    {latest!.publishedAt && <div className="help-pub">发布于 {latest!.publishedAt}</div>}
+                    <div className="help-update-actions">
+                      <button className="tb-btn" type="button" onClick={() => void openReleases()}>
+                        打开下载页
+                      </button>
+                      {latest!.url && (
+                        <button className="tb-btn" type="button" onClick={() => void copyUrl(latest!.url!)}>
                           复制下载链接
                         </button>
-                        <a className="tb-btn" href={manifest.url} target="_blank" rel="noreferrer">
-                          打开下载页
-                        </a>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
-                ) : manifest ? (
-                  <div className="help-ok">当前已是最新版本（{manifest.version}）。</div>
+                ) : latest ? (
+                  <div className="help-ok">当前已是最新版本（{latest.version}）。</div>
                 ) : (
                   <div className="help-note-box">
                     <p>
-                      本应用是<b>离线优先</b>设计，未内置在线更新源。检查更新读取的是本机更新清单文件：
+                      点「检查远端更新」会向 GitHub 查询本项目的最新正式发布版本 ——
+                      只读一次公开的 Release 接口，<b>不上传任何数据</b>，也不会自动轮询。
                     </p>
-                    <code className="help-path">{manifestPath || "%APPDATA%\\MWTyper\\update-manifest.json"}</code>
-                    <p>文件格式（把版本号换成你要发布的版本）：</p>
-                    <pre className="help-notes">{`{
-  "version": "0.2.0",
-  "url": "https://example.com/MWTyper-0.2.0-setup.exe",
-  "notes": "修复了…",
-  "publishedAt": "2026-11-25"
-}`}</pre>
+                    <p>若网络不可用，可参考本机更新清单文件：</p>
+                    <code className="help-path">
+                      {manifestPath || "%APPDATA%\\MWTyper\\update-manifest.json"}
+                    </code>
+                    {manifest && <div className="help-pub">本机清单记录版本：{manifest.version}</div>}
                   </div>
                 )}
-
-                <div className="help-update-actions">
-                  <button className="tb-btn" type="button" onClick={recheck} disabled={checking}>
-                    {checking ? "检查中…" : "立即检查"}
-                  </button>
-                </div>
               </>
             )}
 

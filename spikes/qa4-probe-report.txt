@@ -2,7 +2,7 @@ OK [P1/confirm-queue] P1-1 首个确认框是「删除文件」请求
 OK [P1/confirm-queue] P1-2 队列不顶掉队首：显示的仍是第一个请求（删除） — first=删除文件×删除「B.md」？将移入 .mwtyper/trash，可恢复。取消确 now=删除文件×删除「B.md」？将移入 .mwtyper/trash，可恢复。取消确
 OK [P1/confirm-queue] P1-3 回答「删除·确定」后，正在编辑的脏标签 A 不应被连带关闭（用户从未看到它的确认框） — A 标签存在=true
 OK [P1/confirm-queue] P1-4 回答「删除·确定」后，A 的未保存状态与内容不得丢失 — A 存在=true dirty=true
-OK [P1/confirm-queue] P1-5 队首请求本身的语义必须照常生效（B.md 确实被删除） — B.md 已移除=true fs=["/demo/A.md","/demo/.mwtyper/trash/1795582318159-B.md"]
+OK [P1/confirm-queue] P1-5 队首请求本身的语义必须照常生效（B.md 确实被删除） — B.md 已移除=true fs=["/demo/A.md","/demo/.mwtyper/trash/1795591422262-B.md"]
 OK [P1/confirm-queue] P1-6 队尾的「关闭 A」请求必须仍待用户单独确认（不得被队首的作答一并结算） — dialog=关闭标签×「A.md」未保存，确定关闭？取消确定
 OK [P1c/confirm-cancel] P1c-1 回答「取消」不得连带删除文件（B 未被删除） — fs=["/demo/A.md","/demo/B.md"]
 OK [P1c/confirm-cancel] P1c-2 回答「取消」不得连带关闭脏标签（A 仍在且仍为脏） — A 存在=true dirty=true

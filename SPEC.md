@@ -1,9 +1,9 @@
 # MWTyper 产品与技术规格（SPEC）
 
-- 版本：v1.9（**高亮样式体系重构 + 随航编辑**。用户诉求「编辑器高亮模式的样式不好看，要做随航编辑」。① **随航编辑**：新增第三种模式 `split`（源码 ｜ 实时预览 并排，滚动联动，分栏可拖拽）；② **高亮四块**：源码模式亮色补专属语法高亮（此前亮色传空数组 → 压根没高亮）、代码块主题跟随亮/暗（此前两套主题都硬编码 atom-one-dark 深底）、补齐 Markdown 标记专属配色（此前 6 种标记符共用一个 tag 无法区分）、查找高亮与选区配色再优化；③ 修复源码模式行号与代码间 120px 断裂空白；④ 新增 **2 套常驻闸门**（真实浏览器随航验收 19 项 + 高亮实测脚本）；见 §12）
-- 日期：2026-11-24
+- 版本：v1.10（**「检查更新」改为真正查询远端**。用户诉求「检查更新的功能要检查的是远端是否有新的版本，参考 MWMD 项目的检查更新功能」。① **认知修正**：v1.9 的「检查更新」读本机清单文件，当时的理由「cargo 缓存里没有 HTTP 客户端、CSP 把 `connect-src` 限制在 `ipc:`」**只对 Rust 侧成立** —— 联网用 WebView2 自带的 `fetch` 即可，CSP 也可放开一个源；② 新增 `src/update.ts`，查 GitHub Releases 的最新正式版（`api.github.com`，CORS 友好），Rust 侧只保留「用 `ShellExecuteW` 调起系统浏览器打开下载页」；③ **SemVer 优先级修正**：旧版朴素切段会把 `0.1.0-beta.2` 判成比 `0.1.0` 新 → 本地跑预发布版时永远收不到正式版提示；④ 连带修复「按钮在异步期间被 `disabled` → 焦点丢失 → Escape 关不掉模态」这一既有缺陷（document 捕获阶段兜底 + 模态栈保分层语义）；⑤ 新增 `update-probe` 26 项、help-probe 改为路由拦截模拟远端；见 §12）
+- 日期：2026-11-25
 - 定位：Rust 技术栈的本地 Markdown 写作工具，参考 Typora 的「所见即所得」体验，以「本地快照历史 + Rust 全文搜索 + 命令面板」为差异化特色。
-- 原则：本地离线优先、纯 .md 无专有格式、低资源占用、Windows 桌面先行（跨平台留待后期）。
+- 原则：本地离线优先、纯 .md 无专有格式、低资源占用、Windows 桌面先行（跨平台留待后期）。**唯一的联网行为**是用户主动触发的「检查远端更新」。
 
 ---
 
@@ -227,17 +227,23 @@ MWTyper/
 - **四个分区**：
   1. **Markdown 速查**：按「基础 / 块与列表 / 链接与图片 / 表格 / 公式 / 进阶」分组，共 26 条语法；每条含语法写法、说明、**「插入」按钮**（把模板写到当前光标处，帮助中心保持打开可连续插入）。面板中如实标注本项目的真实限制（如源码模式基于 CommonMark、不认 GFM 删除线）。
   2. **快捷键**：30 条，按「文件 / 编辑 / 视图 / 查找与命令 / 其他」分组。数据源 `src/help/shortcuts.ts` 为**单一事实源**（命令面板与本分区共用，避免两处漂移）。
-  3. **检查更新**：当前版本、构建时间、上次检查时间；「立即检查」按钮。
+  3. **检查更新**：当前版本、构建时间、**远端最新版**、上次检查时间；「检查远端更新」与「打开发布页」按钮。
   4. **关于**：版本、构建时间、定位、技术栈、自定义主题写法说明。
-- **更新源机制（诚实实现）**：本应用是**离线优先**设计，构建环境无网络、cargo 缓存里没有 HTTP 客户端（无 reqwest/ureq），WebView 的 CSP 也把 `connect-src` 限制在 `ipc:` —— 真正的联网检查**在当前环境做不到**。因此「检查更新」读取的是**本机更新清单** `%APPDATA%/MWTyper/update-manifest.json`：
-  ```json
-  { "version": "0.2.0", "url": "https://…/MWTyper-0.2.0-setup.exe", "notes": "…", "publishedAt": "2026-11-25" }
-  ```
-  - 版本高于当前 → 显示新版本号、更新说明、发布日期、「复制下载链接」与「打开下载页」；
-  - 版本不高于当前 → 显示「当前已是最新版本」；
-  - **没有清单 → 如实说明「未内置在线更新源」并给出清单路径与格式示例**，**绝不谎称检查过或已是最新**。
-  - 检查逻辑与将来接在线源完全一致，只是把「取清单」这一步从网络换成本地文件。
-- **Rust 侧新增命令**：`app_info`（版本/构建时间）、`read_update_manifest`（读清单）、`update_manifest_path`（清单路径）。构建时间由 `build.rs` 注入 `MWTYPER_BUILD_TIME`（Unix 秒，前端格式化）。
+- **更新源机制（v1.10 改为**真正查远端**）**：此前 v1.9 的「检查更新」读的是**本机清单文件** `%APPDATA%/MWTyper/update-manifest.json` —— 当时的判断是「构建环境无网络、cargo 缓存里没有 HTTP 客户端、WebView 的 CSP 把 `connect-src` 限制在 `ipc:`，真正的联网检查做不到」。**这个判断只对 Rust 侧成立，对整体是错的**：
+  - 联网**不需要 Rust 侧 HTTP 客户端** —— WebView2 自带 `fetch`，在页面里发请求即可；
+  - CSP 的 `connect-src` **可以按需放开**（只加 `https://api.github.com` 一个源）；
+  - Rust 侧只保留「调起系统浏览器打开下载页」这一件小事（`open_external`）。
+  现在的实现（`src/update.ts`）：
+  - **查询远端**：读 GitHub Releases 的**最新正式版** `GET https://api.github.com/repos/sandinsnow/MWTyper/releases/latest`。
+    走 REST API 而非资产直链 —— 资产直链会 302 跳 CDN，浏览器 fetch 常因缺 CORS 头失败；`api.github.com` 返回 `Access-Control-Allow-Origin: *`。
+    CI 另外发布的 `latest.json` 供将来的 Rust 端自替换更新器使用（无 CORS 限制）。
+  - **版本比对**：按 **SemVer 2.0** 优先级规则（核心三段按数值比 → 预发布版低于正式版 → 预发布标识逐段比 → `+build` 元数据不参与比较）。
+    ⚠️ 不能用「按 `.`/`-`/`+` 切段后逐段取数字」的朴素写法：那会把 `0.1.0-beta.2` 解析成 `[0,1,0,0,2]`、`0.1.0` 解析成 `[0,1,0]`，补齐后得出「预发布版比正式版**新**」的反向结论 → 本地跑预发布版时永远收不到正式版的更新提示。
+  - **失败处理**：10 秒超时（`AbortController`）+ 明确的失败原因（超时 / HTTP 错误 / 无法访问 GitHub）；失败时给出**本机清单**作为离线兜底信息。
+  - **不谎报**：未检查过时既不显示「已是最新」也不显示「发现新版本」；检查失败时显示失败原因。
+  - **唯一的联网行为**是用户主动点「检查远端更新」；不自动轮询、不上报任何数据（与 MWMD 的处理一致）。
+- **Rust 侧命令**：`app_info`（版本/构建时间）、`read_update_manifest`（读本机清单，保留为离线兜底）、`update_manifest_path`（清单路径）、**`open_external`**（在系统默认浏览器打开链接）。构建时间由 `build.rs` 注入 `MWTYPER_BUILD_TIME`（Unix 秒，前端格式化）。
+  - `open_external` 用 `ShellExecuteW` 把 URL 直接交给系统协议处理器（**不经 cmd/shell**），因此 URL 里的 `& ? = % #` 不会被解释成命令；只放行 `http/https/mailto`，拒绝控制字符与裸引号（单测覆盖）。
 
 ### 5.7 主题（M1 亮/暗；M3 自定义主题已落地）
 - CSS 变量单一源；跟随系统 + 手动切换；编辑区与导出 HTML 共用排版变量。
@@ -471,6 +477,17 @@ MWTyper/
 - **D21（v1.9 定 2026-11-25）**：**关窗流程改为幂等的「二次 close」**，并补 `core:window:allow-destroy` 权限。**起因**：用户反馈「关闭按钮的功能无法使用」。**根因**：能力配置只声明了 `core:window:allow-close`，而关闭流程走的是 `close()` → 触发 closeRequested → `preventDefault` → flush → **`destroy()`**；`destroy` 未授权被 ACL 拒绝，而 `void promise` 把 rejection 吞掉 → 窗口永不关闭（且因 `decorations: false`，自绘标题栏的 × 是唯一的关闭入口，等于完全无法退出）。**改法**：① 第一次请求拦截并 flush，随后**再次 close**（此时不再拦截，走正常关闭）→ 正常路径只依赖已授权的 `allow-close`；② `destroy` 仅作兜底并补授权；③ flush 期间再次点关闭必须继续拦截（否则会在落盘前就关窗，丢未保存内容）。**配套**：所有窗口命令改走 `runWinCmd`，失败弹 toast 而非静默。
 
 ## 12. 变更记录
+- **v1.10（2026-11-25）**：**「检查更新」改为真正查询远端**。用户诉求：「检查更新的功能要检查的是远端是否有新的版本，参考 MWMD 项目的检查更新功能」。
+  **① 根因与认知修正**：v1.9 的「检查更新」读的是**本机清单文件** `%APPDATA%/MWTyper/update-manifest.json`，当时的理由是「构建环境无网络、cargo 缓存里没有 HTTP 客户端、WebView 的 CSP 把 `connect-src` 限制在 `ipc:`，真正的联网检查做不到」。**这个判断只对 Rust 侧成立** —— 联网并不需要 Rust 侧 HTTP 客户端（WebView2 自带 `fetch`），CSP 也可按需放开一个源，Rust 侧只需保留「调起系统浏览器打开下载页」。
+  **② 实现**：新增 `src/update.ts` —— `fetchLatest()` 读 `GET https://api.github.com/repos/sandinsnow/MWTyper/releases/latest`（走 REST API 而非资产直链：后者 302 跳 CDN，浏览器 fetch 常因缺 CORS 头失败；`api.github.com` 返回 `Access-Control-Allow-Origin: *`），解析出 `tag_name → version`、`assets[MWTyper.exe].browser_download_url → url`、`body → notes`、`published_at → publishedAt`。CSP 的 `connect-src` 放开 `https://api.github.com`。
+  **③ SemVer 优先级修正（探针暴露的真实缺陷）**：旧 `compareVersions` 用「按 `.`/`-`/`+` 切段后逐段取数字」的朴素写法 → `0.1.0-beta.2` 解析成 `[0,1,0,0,2]`、`0.1.0` 解析成 `[0,1,0]`，补齐后得出「预发布版比正式版**新**」的反向结论 → **本地跑预发布版时永远收不到正式版的更新提示**。改为 SemVer 2.0 优先级规则（核心三段按数值比 → 预发布版低于正式版 → 预发布标识逐段比 → `+build` 元数据不参与比较）。
+  **④ Rust 侧新增 `open_external`**：`ShellExecuteW` 把 URL 直接交给系统协议处理器（**不经 cmd/shell** → URL 里的 `& ? = % #` 不会被解释成命令）；只放行 `http/https/mailto`，拒绝控制字符与裸引号（**3 个单测**覆盖）。新增依赖 `winapi 0.3`（MWMD 同款，离线 cargo 缓存已有）。
+  **⑤ UI 改造**：检查更新分区新增「远端最新版」行与「打开发布页」按钮；按钮文案「立即检查」→「检查远端更新」；未检查过时**既不显示「已是最新」也不显示「发现新版本」**；检查失败时给出失败原因（10 秒超时 / HTTP 错误 / 无法访问）并回落到本机清单信息；打开下载页改用 `open_external`（不用 `<a target="_blank">` —— Tauri 里会在应用内开新窗口）。
+  **⑥ 连带修复（浏览器闸门抓到的既有缺陷）**：帮助中心「检查远端更新」按钮在检查期间被 `disabled` → 浏览器把焦点移到 body → React 合成事件不再冒泡到模态容器 → **Escape 关不掉帮助中心**。修法：`useModal` 增加 **document 捕获阶段**的 Escape 兜底（焦点在哪都能关）。⚠️ 直接这么做会破坏**分层模态**语义（命令面板叠在确认框之上时一次 Escape 把两层都关掉，被 QA 独占资产 P6-10 抓到）→ 补**模态栈**（后挂载的在上层，Escape 只关栈顶）。
+  **⑦ 新增闸门**：`tests/spikes/update-probe.ts` **26 项**（版本比对 10 项：v 前缀 / 数值序 / 位数补齐 / 预发布低于正式版 / 预发布标识数值与字典序 / build 元数据不参与；响应解析 16 项：字段映射 / 空白正文 / 缺 `tag_name` / HTTP 错误抛出 / `AbortSignal` 透传）；`tests/browser/help-probe.cjs` 的 H5/H6 段改为**用 Playwright 路由拦截模拟 GitHub 返回**（闸门因此不依赖真实网络），H5 断言 5 项、H6 断言 6 项。
+  **验证**：`cargo test --lib` **37 passed / 0 failed / 1 ignored**（新增 3 项）；jsdom 闸门 14 套全 PASS（`audit3` 104/104、`qa4-probe` 121/121、`regression` 66/66、`update-probe` 26/26、`serde-spotcheck` 23/23、`editor-probe` 11、`editor-probe2` 6、`editor-probe3` 18、`verify-qa` 14、`m1-editor` 73 断言、`m1-ipc` 15/15、`roundtrip` 不动点、`nodeview-dom` 全要素）；**真实浏览器闸门 12 套 266 项断言全绿**；`tsc --noEmit` **0 error**；`vite build` 绿（6.03s）；`pnpm tauri build --no-bundle` 绿（**winapi 0.3.9 离线编译通过**，Rust release 3m00s → `mwtyper.exe` **9,157,120 B / 8.73 MiB**，PE 导入表仍**全为 Windows 系统 DLL、不含 `WebView2Loader.dll`**）。
+  **已知限制**：① 仍是「提示 + 打开下载页」，**没有**下载 / 校验 / 自替换 / 重启的完整自更新链；② 未签名（无代码签名，用户需自行判断来源）；③ GitHub API 有速率限制（未认证 60 次/小时）——本应用每次检查只发 1 个请求，且完全由用户手动触发，不会触碰配额；④ 分层模态的 Escape 语义现为「只关栈顶」，但**非栈顶模态**内的焦点仍可能落在栈顶模态之外（不影响关闭行为）。
+
 - **v1.9（2026-11-25）**：**编辑体验专项 + 仓库公开化交付**。用户诉求依次为：① 「编辑器高亮模式的样式不好看，要做随航编辑」；② 「自定义主题应改变整个软件，且按深浅配比」；③ 「重新整合菜单栏」；④ 「两处源码编辑样式统一」；⑤ 「增加几套主题，各含深浅」；⑥ 「主题切换后整个框架跟随」；⑦ 「专注模式和打字机模式无效」；⑧ 「标题栏右上角三个图标错位」；⑨ 「提交项目到 GitHub，撰写 README，参考 MWMD 配置 CI」。
   **① 随航编辑（第三种模式）**：新增 `Mode = "wysiwyg" | "source" | "split"`；`split` 下 **CodeMirror 是事实源、tiptap 退化为只读预览**；改造 `currentText()` / `toSource()` / `toWysiwyg()` / `loadBuffer()` 四处归属；滚动联动用**单向锁 + 120ms 冷却**防正反馈。
   **② 高亮四块（根因多为「压根没生效」）**：亮色此前传空数组 `of(dark ? cmDark : [])` → 亮色完全没高亮，改为成对双主题；6 种 Markdown 标记符（HeaderMark/QuoteMark/ListMark/EmphasisMark/CodeMark/LinkMark）lezer 全映射到同一 tag，`HighlightStyle` 原理上无法区分 → 改用 `Decoration.mark({ class })`（`src/editor/cm-marks.ts`）；`markdown()` 默认 `commonmarkLanguage` **不解析表格** → 改 `markdown({ base: markdownLanguage })`；源码侧结构视觉**必须用 `Decoration.line()`**（用 `Decoration.replace({block:true,widget})` 会把块内容替换成静态 widget → 源码不能编辑）；代码块主题此前两套都硬编码 atom-one-dark 深底 → 改为跟随亮暗。

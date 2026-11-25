@@ -169,7 +169,10 @@ npm i -D playwright && npx playwright install chromium
 
 [`ci.yml`](.github/workflows/ci.yml) 负责每次 push / PR 的质量闸门：类型检查、Rust 测试、全部 jsdom 闸门、便携 exe 构建。
 
-> **自动更新现状**：当前为「检查更新 + 提示 + 打开下载页」的 MVP。完整的「下载 → 校验 → 自替换重启」与 minisign 更新签名仍在路线图上。
+> **检查更新**：帮助中心「检查更新」分区会向 GitHub 查询本项目的**最新正式发布版本**，
+> 与本地版本按 SemVer 比对，有新版就显示版本号、更新说明与下载入口。
+> 这是应用**唯一**的联网行为 —— 只读一次公开的 Release 接口，不上传任何数据，也不自动轮询。
+> 完整的「下载 → 校验 → 自替换重启」与 minisign 更新签名仍在路线图上。
 
 ---
 

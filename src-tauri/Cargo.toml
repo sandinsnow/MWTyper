@@ -25,6 +25,13 @@ regex = "1"
 chrono = "0.4"
 base64 = "0.22"
 
+# 「检查更新 → 打开下载页」需要调起系统默认浏览器。
+# 用 ShellExecuteW 把 URL 直接交给系统协议处理器（不经 cmd/shell），
+# 因此 URL 里的 & ? = % # 不会被解释成命令。
+# 仅 Windows 需要；winapi 0.3 是 MWMD 同款选择，已在离线 cargo 缓存中。
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3", features = ["winuser", "winbase", "winnt", "minwindef", "shellapi"] }
+
 [profile.release]
 opt-level = "s"
 lto = true

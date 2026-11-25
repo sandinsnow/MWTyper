@@ -59,7 +59,7 @@ OK [D/modal-race] D-8 写作目标弹出输入框
 OK [D/modal-race] D-9 第二个输入请求不得沿用上一个输入框里已输入的文本（新弹窗应显示自己的默认值） — value="0"
 OK [D/modal-race] D-10 队首是「删除文件」确认框 — 删除文件×删除「B.md」？将移入 .mwtyper/trash，可恢复。取消确定
 OK [D/modal-race] D-11 第二个确认请求不得顶掉队首（两个请求应共存于队列中） — dialogs=1
-OK [D/modal-race] D-12 回答「删除·确定」后，队首的删除语义必须照常生效（B.md 被移入回收站） — ["/demo/A.md","/demo/.mwtyper/trash/1795582310746-B.md"]
+OK [D/modal-race] D-12 回答「删除·确定」后，队首的删除语义必须照常生效（B.md 被移入回收站） — ["/demo/A.md","/demo/.mwtyper/trash/1795591414427-B.md"]
 OK [D/modal-race] D-13 回答「删除·确定」后，用户从未看到其确认框的脏标签 A 不得被连带关闭 — 未命名,A.md,未命名
 OK [D/modal-race] D-13b 被连带关闭的标签其未保存状态与内容也不得丢失 — dirty=true tabs=未命名,A.md,未命名
 OK [D/modal-race] D-13c 队尾的「关闭 A」请求必须仍待用户单独确认（不得被队首的作答一并结算） — 关闭标签×「A.md」未保存，确定关闭？取消确定

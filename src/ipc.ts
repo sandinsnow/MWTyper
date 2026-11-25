@@ -392,6 +392,10 @@ async function mockInvoke(cmd: string, args: Record<string, unknown> = {}): Prom
     }
     case "update_manifest_path":
       return "/demo/update-manifest.json";
+    case "open_external":
+      // 浏览器 mock 下没有系统浏览器可调起；记录到控制台便于调试。
+      console.info("[mock] open_external:", args.url);
+      return null;
     case "list_themes":
       return Object.keys(mockThemesLoad()).sort();
     case "read_theme": {
@@ -445,6 +449,8 @@ export const api = {
   appInfo: () => call<AppInfo>("app_info"),
   readUpdateManifest: () => call<UpdateManifest | null>("read_update_manifest"),
   updateManifestPath: () => call<string>("update_manifest_path"),
+  /** 在系统默认浏览器打开外部链接（「检查更新 → 打开下载页」）。 */
+  openExternal: (url: string) => call<void>("open_external", { url }),
   listThemes: () => call<string[]>("list_themes"),
   installBuiltinThemes: () => call<string[]>("install_builtin_themes"),
   readTheme: (name: string) => call<string>("read_theme", { name }),

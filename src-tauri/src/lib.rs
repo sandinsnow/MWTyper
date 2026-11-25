@@ -244,7 +244,8 @@ pub fn run() {
             export::export_html,
             app::app_info,
             app::read_update_manifest,
-            app::update_manifest_path
+            app::update_manifest_path,
+            app::open_external
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -11,6 +11,15 @@ const FOCUSABLE_SELECTOR = [
 ].join(",");
 
 /**
+ * 已挂载模态的栈：**后挂载的 = 更上层的浮层**。
+ *
+ * 为什么需要栈：应用里存在**分层模态** —— 命令面板可以叠在「关闭脏标签」的
+ * 确认框之上（QA 探针 P6 就在守这条）。若每个模态都独立响应 Escape，
+ * 一次按键会把两层一起关掉，而期望是「只关最上面那层」。
+ */
+const modalStack: Array<() => void> = [];
+
+/**
  * 弹窗键盘行为：Escape 关闭、Tab 在容器内循环、关闭后归还焦点。
  *
  * 将返回的 onKeyDown 挂在弹窗容器（如 `.modal`，需 tabIndex={-1}）上；
@@ -22,6 +31,14 @@ export function useModal(
 ): { onKeyDown: (e: KeyboardEvent) => void; restoreFocus: () => void } {
   const closeRef = useRef(close);
   closeRef.current = close;
+  /**
+   * 稳定的关闭包装：内部引用**最新**的 close，但自身引用永不变。
+   *
+   * 模态栈与 document 级 Escape 监听都需要一个可比较的稳定引用 ——
+   * `close` 常常是内联箭头函数，每次渲染都是新引用，直接入栈会导致
+   * 「出栈时找不到自己」与「调用到旧闭包」。
+   */
+  const stableClose = useCallback(() => closeRef.current(), []);
   const previousActiveRef = useRef<HTMLElement | null>(null);
 
   const restoreFocus = useCallback(() => {
@@ -68,6 +85,45 @@ export function useModal(
       first.focus();
     }
   }, []);
+
+  /**
+   * Escape 在 **document 捕获阶段**兜底处理。
+   *
+   * 为什么不能只靠容器上的 onKeyDown（React 合成事件）：
+   *   合成事件要靠**焦点在容器内**才会冒泡到容器。一旦焦点落到容器之外
+   *   （典型场景：容器内的按钮在异步等待期间被 `disabled` → 浏览器把焦点
+   *   移到 body），Escape 就再也关不掉弹窗 —— 用户会以为界面卡死了。
+   *   本项目实测命中过这条路径：帮助中心「检查远端更新」按钮在检查期间
+   *   被禁用，焦点丢失后 Escape 失效。
+   *
+   * 分层模态：**只有栈顶响应** Escape（见 modalStack）——
+   *   命令面板叠在确认框之上时，按一次只关命令面板，确认框保持不动。
+   *
+   * 捕获阶段 + stopPropagation：既保证「焦点在哪都能关」，又不会与容器上的
+   *   onKeyDown 重复触发（事件在到达 React 根节点前就被拦下）。
+   */
+  useEffect(() => {
+    // ⚠️ 本文件顶部 import 的 `KeyboardEvent` 是 **React 的**合成事件类型，
+    // 与 DOM 原生事件类型不同 —— 这里必须显式用 `globalThis.KeyboardEvent`。
+    const onEsc = (e: globalThis.KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (modalStack[modalStack.length - 1] !== stableClose) return; // 非栈顶不响应
+      e.preventDefault();
+      e.stopPropagation();
+      stableClose();
+    };
+    document.addEventListener("keydown", onEsc, true);
+    return () => document.removeEventListener("keydown", onEsc, true);
+  }, [stableClose]);
+
+  /** 入栈 / 出栈：后挂载的模态在栈顶。 */
+  useEffect(() => {
+    modalStack.push(stableClose);
+    return () => {
+      const i = modalStack.lastIndexOf(stableClose);
+      if (i >= 0) modalStack.splice(i, 1);
+    };
+  }, [stableClose]);
 
   return { onKeyDown, restoreFocus };
 }
