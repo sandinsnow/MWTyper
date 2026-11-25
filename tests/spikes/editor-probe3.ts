@@ -1,11 +1,15 @@
 // 编辑器缺陷回归守卫 · 第三批（模式切换/定位/对比度/a11y，v1.8 改写）
 // 原为缺陷复现脚本；相关缺陷已修复，断言已反转为「修复生效」。
 //
-// 运行：node node_modules/tsx/dist/cli.mjs .workbuddy/review/editor-probe3.ts
+// 运行：node node_modules/tsx/dist/cli.mjs tests/spikes/editor-probe3.ts
 import { JSDOM } from "jsdom";
 import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const ROOT = "D:/PROJECT/MWTyper";
+// 仓库根：相对本文件解析（tests/spikes/ 的上上级）。
+// 不能写死绝对路径 —— 换机器或换 CI runner 就会 ENOENT。
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const dom = new JSDOM("<!doctype html><html><body><div id='editor'></div></body></html>", {
   pretendToBeVisual: true,
   url: "http://localhost/",
