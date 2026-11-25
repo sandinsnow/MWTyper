@@ -115,8 +115,24 @@ jobs:
           URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/${APP_NAME}.exe"
           PUB_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
-          # 用 tag 附注（若有）作为发布说明，回退为标签名
-          NOTES=$(git tag -l --format='%(contents)' "$TAG" 2>/dev/null || echo "$TAG")
+          # 用 tag 附注（若有）作为发布说明，回退为标签名。
+          #
+          # ⚠️ 这里必须多级回退：`actions/checkout` 在 tag 触发场景下**不保证**
+          # 把 annotated tag 的 tag 对象落地到本地仓库 —— 标签引用会被「剥成」
+          # 它指向的 commit，于是 `git tag -l --format='%(contents)'` 取到的是
+          # **commit message** 而不是标签附注（v0.1.0 首次发布时实测命中此坑：
+          # Release 正文变成了最后一条 commit 的标题）。
+          # 三级回退：① 显式 fetch 标签对象后的本地引用 → ② GitHub API 取标签对象
+          # → ③ 标签名兜底。
+          git fetch --force --tags origin 2>/dev/null || true
+          NOTES=$(git for-each-ref "refs/tags/$TAG" --format='%(contents)' 2>/dev/null | head -n -1)
+          if [ -z "$NOTES" ]; then
+            # 附注可能是多行，且第一行与最后一行会被 head -n -1 误伤 → 改用 API 的原始 message
+            NOTES=$(curl -sf -H "Authorization: Bearer $GITHUB_TOKEN" \
+              "${{ github.api_url }}/repos/${{ github.repository }}/git/tags/$TAG" \
+              | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const j=JSON.parse(s);process.stdout.write(j.message||"")}catch{}})' \
+              2>/dev/null || echo "")
+          fi
           [ -z "$NOTES" ] && NOTES="$TAG"
           # 同一份说明既写进 latest.json，也作为 GitHub Release 正文（body_path）。
           # 不用 generate_release_notes：它只会生成一句 Full Changelog 链接，把附注里的用户向清单丢掉。
