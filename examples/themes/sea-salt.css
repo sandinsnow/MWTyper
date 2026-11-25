@@ -1,0 +1,12 @@
+/* 海盐 —— 清爽的淡蓝灰 + 海蓝强调色（MWTyper 内置示例主题） */
+:root {
+  --mw-base-bg: #f1f5f9;
+  --mw-base-fg: #1f2937;
+  --mw-base-accent: #0369a1;
+}
+
+[data-theme="dark"] {
+  --mw-base-bg: #111c26;
+  --mw-base-fg: #d6e3ee;
+  --mw-base-accent: #56a8e0;
+}

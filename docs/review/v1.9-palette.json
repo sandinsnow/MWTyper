@@ -1,0 +1,468 @@
+{
+  "light": [
+    {
+      "name": "正文 --fg / --fg",
+      "fg": "#1f2937",
+      "bg": "#ffffff",
+      "level": "text"
+    },
+    {
+      "name": "次要文字 --fg-dim",
+      "fg": "#5b6472",
+      "bg": "#ffffff",
+      "level": "text"
+    },
+    {
+      "name": "次要文字(侧栏底 --bg-side)",
+      "fg": "#5b6472",
+      "bg": "#f0f1f3",
+      "level": "text"
+    },
+    {
+      "name": "强调色 --accent",
+      "fg": "#0a754d",
+      "bg": "#ffffff",
+      "level": "text"
+    },
+    {
+      "name": "强调色(侧栏底)",
+      "fg": "#0a754d",
+      "bg": "#f0f1f3",
+      "level": "text"
+    },
+    {
+      "name": "源码-标题(heading1-6)",
+      "fg": "#0550ae",
+      "bg": "#ffffff",
+      "level": "text"
+    },
+    {
+      "name": "源码-链接 link",
+      "fg": "#0969da",
+      "bg": "#ffffff",
+      "level": "text"
+    },
+    {
+      "name": "源码-链接文字 url",
+      "fg": "#0a3069",
+      "bg": "#ffffff",
+      "level": "text"
+    },
+    {
+      "name": "源码-行内代码 monospace",
+      "fg": "#cf222e",
+      "bg": "#ffffff",
+      "level": "text"
+    },
+    {
+      "name": "源码-引用 quote",
+      "fg": "#57606a",
+      "bg": "#ffffff",
+      "level": "text"
+    },
+    {
+      "name": "源码-列表 list",
+      "fg": "#0550ae",
+      "bg": "#ffffff",
+      "level": "text"
+    },
+    {
+      "name": "源码-转义 escape",
+      "fg": "#cf222e",
+      "bg": "#ffffff",
+      "level": "text"
+    },
+    {
+      "name": "源码-注释 comment",
+      "fg": "#57606a",
+      "bg": "#ffffff",
+      "level": "text"
+    },
+    {
+      "name": "源码-正文 content",
+      "fg": "#1f2328",
+      "bg": "#ffffff",
+      "level": "text"
+    },
+    {
+      "name": "源码-分隔线 contentSeparator",
+      "fg": "#8c959f",
+      "bg": "#ffffff",
+      "level": "ui"
+    },
+    {
+      "name": "标记符-标题 #",
+      "fg": "#8250df",
+      "bg": "#ffffff",
+      "level": "text"
+    },
+    {
+      "name": "标记符-引用 >",
+      "fg": "#1a7f37",
+      "bg": "#ffffff",
+      "level": "text"
+    },
+    {
+      "name": "标记符-列表 -",
+      "fg": "#0550ae",
+      "bg": "#ffffff",
+      "level": "text"
+    },
+    {
+      "name": "标记符-强调 *",
+      "fg": "#bc4c00",
+      "bg": "#ffffff",
+      "level": "text"
+    },
+    {
+      "name": "标记符-代码 `",
+      "fg": "#cf222e",
+      "bg": "#ffffff",
+      "level": "text"
+    },
+    {
+      "name": "标记符-链接 [",
+      "fg": "#0969da",
+      "bg": "#ffffff",
+      "level": "text"
+    },
+    {
+      "name": "代码块-正文",
+      "fg": "#24292f",
+      "bg": "#f6f8fa",
+      "level": "text"
+    },
+    {
+      "name": "代码块-关键字",
+      "fg": "#cf222e",
+      "bg": "#f6f8fa",
+      "level": "text"
+    },
+    {
+      "name": "代码块-类型",
+      "fg": "#0550ae",
+      "bg": "#f6f8fa",
+      "level": "text"
+    },
+    {
+      "name": "代码块-字符串",
+      "fg": "#0a3069",
+      "bg": "#f6f8fa",
+      "level": "text"
+    },
+    {
+      "name": "代码块-数字",
+      "fg": "#0550ae",
+      "bg": "#f6f8fa",
+      "level": "text"
+    },
+    {
+      "name": "代码块-注释",
+      "fg": "#57606a",
+      "bg": "#f6f8fa",
+      "level": "text"
+    },
+    {
+      "name": "代码块-函数名",
+      "fg": "#8250df",
+      "bg": "#f6f8fa",
+      "level": "text"
+    },
+    {
+      "name": "代码块-变量",
+      "fg": "#953800",
+      "bg": "#f6f8fa",
+      "level": "text"
+    },
+    {
+      "name": "代码块-标签",
+      "fg": "#116329",
+      "bg": "#f6f8fa",
+      "level": "text"
+    },
+    {
+      "name": "代码块-属性",
+      "fg": "#0550ae",
+      "bg": "#f6f8fa",
+      "level": "text"
+    },
+    {
+      "name": "代码块-元信息",
+      "fg": "#57606a",
+      "bg": "#f6f8fa",
+      "level": "text"
+    },
+    {
+      "name": "代码块-工具条底(非文本)",
+      "fg": "#eaeef2",
+      "bg": "#ffffff",
+      "level": "decorative"
+    },
+    {
+      "name": "查找高亮(普通命中)",
+      "fg": "#1f2328",
+      "bg": "#fff3b0",
+      "level": "text"
+    },
+    {
+      "name": "查找高亮(当前命中)",
+      "fg": "#1f2328",
+      "bg": "#ffb020",
+      "level": "text"
+    },
+    {
+      "name": "查找当前项描边(对当前命中底)",
+      "fg": "#7a3b00",
+      "bg": "#ffb020",
+      "level": "ui"
+    },
+    {
+      "name": "查找当前项描边（仅画在高亮底色上，不与编辑底相邻）",
+      "fg": "#7a3b00",
+      "bg": "#ffffff",
+      "level": "decorative"
+    },
+    {
+      "name": "选区 --sel",
+      "fg": "#1f2937",
+      "bg": "#cfe2ff",
+      "level": "text"
+    },
+    {
+      "name": "源码-行号槽(非文本)",
+      "fg": "#5b6472",
+      "bg": "#f0f1f3",
+      "level": "ui"
+    }
+  ],
+  "dark": [
+    {
+      "name": "正文 --fg / --fg",
+      "fg": "#d6d9de",
+      "bg": "#22252b",
+      "level": "text"
+    },
+    {
+      "name": "次要文字 --fg-dim",
+      "fg": "#98a0ab",
+      "bg": "#22252b",
+      "level": "text"
+    },
+    {
+      "name": "次要文字(侧栏底 --bg-side)",
+      "fg": "#98a0ab",
+      "bg": "#25282e",
+      "level": "text"
+    },
+    {
+      "name": "强调色 --accent",
+      "fg": "#34d399",
+      "bg": "#22252b",
+      "level": "text"
+    },
+    {
+      "name": "源码-标题(heading1-6)",
+      "fg": "#7ee787",
+      "bg": "#22252b",
+      "level": "text"
+    },
+    {
+      "name": "源码-链接 link",
+      "fg": "#79c0ff",
+      "bg": "#22252b",
+      "level": "text"
+    },
+    {
+      "name": "源码-链接文字 url",
+      "fg": "#a5d6ff",
+      "bg": "#22252b",
+      "level": "text"
+    },
+    {
+      "name": "源码-行内代码 monospace",
+      "fg": "#ffa657",
+      "bg": "#22252b",
+      "level": "text"
+    },
+    {
+      "name": "源码-引用 quote",
+      "fg": "#8b949e",
+      "bg": "#22252b",
+      "level": "text"
+    },
+    {
+      "name": "源码-列表 list",
+      "fg": "#79c0ff",
+      "bg": "#22252b",
+      "level": "text"
+    },
+    {
+      "name": "源码-转义 escape",
+      "fg": "#ff7b72",
+      "bg": "#22252b",
+      "level": "text"
+    },
+    {
+      "name": "源码-注释 comment",
+      "fg": "#8b949e",
+      "bg": "#22252b",
+      "level": "text"
+    },
+    {
+      "name": "源码-正文 content",
+      "fg": "#d6d9de",
+      "bg": "#22252b",
+      "level": "text"
+    },
+    {
+      "name": "源码-分隔线 contentSeparator",
+      "fg": "#6e7681",
+      "bg": "#22252b",
+      "level": "ui"
+    },
+    {
+      "name": "标记符-标题 #",
+      "fg": "#d2a8ff",
+      "bg": "#22252b",
+      "level": "text"
+    },
+    {
+      "name": "标记符-引用 >",
+      "fg": "#7ee787",
+      "bg": "#22252b",
+      "level": "text"
+    },
+    {
+      "name": "标记符-列表 -",
+      "fg": "#79c0ff",
+      "bg": "#22252b",
+      "level": "text"
+    },
+    {
+      "name": "标记符-强调 *",
+      "fg": "#ffa657",
+      "bg": "#22252b",
+      "level": "text"
+    },
+    {
+      "name": "标记符-代码 `",
+      "fg": "#ff7b72",
+      "bg": "#22252b",
+      "level": "text"
+    },
+    {
+      "name": "标记符-链接 [",
+      "fg": "#79c0ff",
+      "bg": "#22252b",
+      "level": "text"
+    },
+    {
+      "name": "代码块-正文",
+      "fg": "#d6d9de",
+      "bg": "#1b1e23",
+      "level": "text"
+    },
+    {
+      "name": "代码块-关键字",
+      "fg": "#ff7b72",
+      "bg": "#1b1e23",
+      "level": "text"
+    },
+    {
+      "name": "代码块-类型",
+      "fg": "#79c0ff",
+      "bg": "#1b1e23",
+      "level": "text"
+    },
+    {
+      "name": "代码块-字符串",
+      "fg": "#a5d6ff",
+      "bg": "#1b1e23",
+      "level": "text"
+    },
+    {
+      "name": "代码块-数字",
+      "fg": "#79c0ff",
+      "bg": "#1b1e23",
+      "level": "text"
+    },
+    {
+      "name": "代码块-注释",
+      "fg": "#8b949e",
+      "bg": "#1b1e23",
+      "level": "text"
+    },
+    {
+      "name": "代码块-函数名",
+      "fg": "#d2a8ff",
+      "bg": "#1b1e23",
+      "level": "text"
+    },
+    {
+      "name": "代码块-变量",
+      "fg": "#ffa657",
+      "bg": "#1b1e23",
+      "level": "text"
+    },
+    {
+      "name": "代码块-标签",
+      "fg": "#7ee787",
+      "bg": "#1b1e23",
+      "level": "text"
+    },
+    {
+      "name": "代码块-属性",
+      "fg": "#79c0ff",
+      "bg": "#1b1e23",
+      "level": "text"
+    },
+    {
+      "name": "代码块-元信息",
+      "fg": "#8b949e",
+      "bg": "#1b1e23",
+      "level": "text"
+    },
+    {
+      "name": "代码块-工具条底(非文本)",
+      "fg": "#262b33",
+      "bg": "#22252b",
+      "level": "decorative"
+    },
+    {
+      "name": "查找高亮(普通命中)",
+      "fg": "#1f2328",
+      "bg": "#ffd54f",
+      "level": "text"
+    },
+    {
+      "name": "查找高亮(当前命中)",
+      "fg": "#1f2328",
+      "bg": "#f59e0b",
+      "level": "text"
+    },
+    {
+      "name": "查找当前项描边(对当前命中底)",
+      "fg": "#7a3b00",
+      "bg": "#f59e0b",
+      "level": "ui"
+    },
+    {
+      "name": "查找当前项描边（仅画在高亮底色上，不与编辑底相邻）",
+      "fg": "#7a3b00",
+      "bg": "#22252b",
+      "level": "decorative"
+    },
+    {
+      "name": "选区 --sel",
+      "fg": "#d6d9de",
+      "bg": "#2f5480",
+      "level": "text"
+    },
+    {
+      "name": "源码-行号槽(非文本)",
+      "fg": "#98a0ab",
+      "bg": "#25282e",
+      "level": "ui"
+    }
+  ]
+}

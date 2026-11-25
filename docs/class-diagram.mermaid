@@ -1,0 +1,286 @@
+classDiagram
+    %% ===== 前端数据模型 =====
+    class Settings {
+        +theme: string
+        +autosave_ms: number
+        +recent_files: string[]
+        +sidebar_open: boolean
+        +sidebar_width: number
+        +goal_words: number
+        +focus_mode: boolean
+        +typewriter_mode: boolean
+        +snapshot_keep: number
+        +snapshot_days: number
+        +zoom: number
+        +custom_theme: string
+    }
+
+    class Tab {
+        +id: number
+        +path: string
+        +name: string
+        +text: string
+        +dirty: boolean
+    }
+
+    class TreeNode {
+        +name: string
+        +path: string
+        +kind: string
+        +children?: TreeNode[]
+    }
+
+    class Stats {
+        +words: number
+        +chars: number
+        +reading_minutes: number
+    }
+
+    class SearchResult {
+        +hits: SearchHit[]
+        +truncated: boolean
+        +files_scanned: number
+        +elapsed_ms: number
+    }
+    class SearchHit {
+        +path: string
+        +line_no: number
+        +line: string
+    }
+
+    class SnapshotMeta {
+        +id: string
+        +ts: string
+        +hash: string
+        +auto: boolean
+        +bytes: number
+    }
+
+    class FsChange {
+        +path: string
+        +kind: string
+    }
+
+    %% ===== IPC 服务层（单一边界） =====
+    class api {
+        +listTree(root: string): Promise~TreeNode~
+        +readFile(path: string): Promise~string~
+        +saveFile(path: string, content: string): Promise~void~
+        +renamePath(old: string, new: string): Promise~void~
+        +deletePath(path: string, workspace: string): Promise~string~
+        +saveImageAsset(baseDir: string, name: string, dataB64: string): Promise~string~
+        +readSettings(): Promise~Settings~
+        +writeSettings(settings: Settings): Promise~void~
+        +pickFolder(): Promise~string~
+        +pickOpenFile(): Promise~string~
+        +pickSaveFile(defaultName: string): Promise~string~
+        +stats(md: string): Promise~Stats~
+        +watchFolder(path: string): Promise~void~
+        +unwatchFolder(): Promise~void~
+        +watchThemes(): Promise~void~
+        +listThemes(): Promise~string[]~
+        +readTheme(name: string): Promise~string~
+        +searchWorkspace(root, query, opts): Promise~SearchResult~
+        +snapshotSave(ws, path, content, auto, keep, days): Promise~SnapshotMeta~
+        +snapshotList(ws, path): Promise~SnapshotMeta[]~
+        +snapshotRead(ws, path, id): Promise~string~
+        +exportHtml(md, title, theme, css, base, embed): Promise~string~
+        +onFsChange(fn): Promise~UnlistenFn~
+        +onThemesChange(fn): Promise~UnlistenFn~
+    }
+
+    %% ===== 编辑器内核 =====
+    class useEditor {
+        +options: Partial~EditorOptions~
+        +rerenderOn?(tr: Transaction): boolean
+        +editor: Editor
+        +elementRef: Ref~HTMLDivElement~
+    }
+    class EditorOptions {
+        +extensions: Extension[]
+        +content: JSONContent
+        +onUpdate: () => void
+    }
+    class MarkdownManager {
+        +extensions: Extension[]
+        +serialize(json: JSONContent): string
+        +parse(md: string): JSONContent
+    }
+    class CodeBlockHljs {
+        +addProseMirrorPlugins(): Plugin[]
+        +addNodeView(): NodeView
+        -highlightDecorations(doc): DecorationSet
+    }
+    class findReplace {
+        +name: "mwtyperFindReplace"
+        +addProseMirrorPlugins(): Plugin[]
+        +computeMatches(doc, q, cs, ww): FindMatch[]
+    }
+    class FindState {
+        +query: string
+        +caseSensitive: boolean
+        +wholeWord: boolean
+        +matches: FindMatch[]
+        +current: number
+    }
+    class focusMode {
+        +name: "mwtyperFocus"
+        +currentBlockDeco(doc, pos): DecorationSet
+    }
+    class htmlPaste {
+        +handlePaste(view, event): boolean
+    }
+    class imageAssets {
+        +handlePaste(view, event): boolean
+        +handleDrop(view, event): boolean
+    }
+    class SourceMode {
+        +doc: string
+        +onChange(value: string): void
+        +onReady(view: EditorView): void
+    }
+    class MwtyperShortcuts {
+        +addKeyboardShortcuts(): KeyMap
+    }
+    class TableToolbar {
+        +selectionInTable(editor: Editor): boolean
+    }
+
+    %% ===== UI 外壳与面板 =====
+    class App {
+        -settings: Settings
+        -tabs: Tab[]
+        -activeId: number
+        -mode: string
+        -sourceText: string
+        -dirty: boolean
+        -conflict: boolean
+        -autoTimer: Timer
+        -statsTimer: Timer
+        -treeTimer: Timer
+        -statsSeqRef: number
+        -cmViewRef: Ref
+        +stashActive(): void
+        +loadBuffer(tab: Tab): void
+        +activateTab(tab: Tab): void
+        +closeTab(id: number): void
+        +save(opts): Promise~void~
+        +openFile(path: string): Promise~void~
+        +toggleMode(): void
+        +scheduleAutosave(): void
+        +scheduleStats(): void
+    }
+    class FileTree
+    class Outline
+    class SearchPanel
+    class HistoryPanel
+    class Palette
+    class StatusBar
+    class SettingsPanel
+    class FindReplaceBar
+    class ConfirmDialog {
+        +open: boolean
+        +title: string
+        +message: string
+        +onConfirm(): void
+    }
+    class PromptDialog {
+        +defaultValue: string
+        +onSubmit(value: string): void
+    }
+    class ToastHost {
+        +toasts: Toast[]
+        +success(msg: string): void
+        +error(msg: string): void
+    }
+    class useModal {
+        +Escape 关闭
+        +焦点陷阱
+        +焦点归还
+    }
+    class diffLines {
+        +diffLines(old, new): DiffLine[]
+    }
+    class exportHtml {
+        +katexCssEmbedded(): Promise~string~
+        +injectKatex(md: string): string
+        +buildExportHtml(...): Promise~string~
+        +printHtml(html: string): void
+    }
+
+    %% ===== Rust 后端命令层 =====
+    class RustFs {
+        +list_tree(root): TreeNode
+        +read_file(path): string
+        +save_file(path, content): void
+        +rename_path(old, new): void
+        +delete_path(path, workspace): string
+        +save_image_asset(baseDir, name, dataB64): string
+        +read_settings(): Settings
+        +write_settings(settings): void
+    }
+    class RustSearch {
+        +search_workspace(root, query, flags, limit): SearchResult
+    }
+    class RustSnapshot {
+        +snapshot_save(ws, path, content, auto, keep, days): SnapshotMeta
+        +snapshot_list(ws, path): SnapshotMeta[]
+        +snapshot_read(ws, path, id): string
+    }
+    class RustExport {
+        +export_html(md, title, theme, css, base, embed): string
+        +render_md(md): string
+        +escape_html(s): string
+    }
+    class RustStats {
+        +stats(md): Stats
+    }
+    class RustWatch {
+        +watch_folder(app, path, state): Result
+        +watch_themes(app, state): Result
+        +unwatch_folder(state): void
+    }
+    class RustThemes {
+        +themes_dir_path(): string
+        +list_themes(): string[]
+        +read_theme(name): string
+    }
+
+    %% ===== 关系 =====
+    App "1" o-- "many" Tab : 管理
+    App --> useEditor : 调用
+    App --> api : IPC 唯一出口
+    App --> FileTree : 渲染
+    App --> Outline : 渲染
+    App --> SearchPanel : 渲染
+    App --> HistoryPanel : 渲染
+    App --> Palette : 渲染
+    App --> StatusBar : 渲染
+    App --> SettingsPanel : 渲染
+    App --> FindReplaceBar : 渲染
+    App --> ConfirmDialog : 替代 window.confirm
+    App --> PromptDialog : 替代 window.prompt
+    App --> ToastHost : 替代 window.alert
+    ConfirmDialog ..> useModal : 使用
+    PromptDialog ..> useModal : 使用
+    useEditor --> EditorOptions : 配置
+    useEditor --> MarkdownManager : 序列化/解析
+    MarkdownManager --> CodeBlockHljs : 扩展
+    MarkdownManager --> findReplace : 扩展
+    MarkdownManager --> focusMode : 扩展
+    MarkdownManager --> htmlPaste : 扩展
+    MarkdownManager --> imageAssets : 扩展
+    findReplace "1" *-- "1" FindState : 插件状态
+    App --> SourceMode : 源码模式懒加载
+    Outline --> diffLines : 历史面板使用
+    HistoryPanel --> diffLines : 使用
+    App --> exportHtml : 导出
+    api --> RustFs : invoke
+    api --> RustSearch : invoke
+    api --> RustSnapshot : invoke
+    api --> RustExport : invoke
+    api --> RustStats : invoke
+    api --> RustWatch : invoke
+    api --> RustThemes : invoke
+    RustExport --> RustFs : path 校验
+    SearchResult "1" *-- "many" SearchHit : 包含

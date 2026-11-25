@@ -1,0 +1,78 @@
+# 每次 push / PR 的质量闸门。
+# 与 release.yml 的区别：这里不签名、不发版，只回答一个问题「这次改动能不能过」。
+#
+# 闸门清单：
+#   1. tsc --noEmit          类型检查
+#   2. pnpm test             全部 jsdom 闸门（QA 独占资产 + 里程碑探针 + 编辑器专项）
+#   3. cargo test --lib      Rust 后端单测
+#   4. pnpm tauri build      便携单文件 exe 能否构建出来（前端资源内嵌 + 编译期校验）
+#
+# 不跑浏览器闸门（tests/browser/*.cjs）：它们需要 Playwright + Chromium，
+# 既慢又依赖浏览器版本；放在本地与 release 前的手动回归里（见 README「运行测试」）。
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TARGET: x86_64-pc-windows-msvc
+
+jobs:
+  quality:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ env.TARGET }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install frontend deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: pnpm typecheck
+
+      - name: Frontend gates (jsdom)
+        run: pnpm test
+
+      # tauri-build 在编译期校验 frontendDist（../dist），必须先出前端产物。
+      - name: Build frontend
+        run: pnpm build
+
+      - name: Rust tests
+        working-directory: src-tauri
+        run: cargo test --lib
+
+      - name: Build portable exe
+        run: pnpm tauri build --no-bundle --target ${{ env.TARGET }}
+
+      - name: Artifact size
+        shell: bash
+        run: |
+          ls -la "src-tauri/target/${TARGET}/release/mwtyper.exe"

@@ -1,0 +1,1059 @@
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+
+:root {
+  --bg: #f6f7f9;
+  --bg-side: #f0f1f3;
+  --bg-editor: #ffffff;
+  --bg-hover: #e8eaed;
+  --fg: #1f2937;
+  --fg-dim: #5b6472;
+  --border: #e5e7eb;
+  /* D-11：--accent 用于链接/焦点环/指示器等「文字与非文本」场景，
+     原 #10b981 在浅色底上仅 2.54:1（侧栏底 2.25:1），不达 WCAG AA。
+     加深为 #0a754d：编辑底 5.73:1、侧栏底 5.07:1，均达 AA 4.5:1。 */
+  --accent: #0a754d;
+  --accent-strong: #047857;
+  --on-accent-strong: #ffffff;
+  --on-danger: #ffffff;
+  --diff-add: #1a7f37;
+  --diff-del: #cf222e;
+  --dirty: #f59e0b;
+  --overlay-bg: rgba(0,0,0,.45);
+  --shadow-modal: 0 12px 40px rgba(0,0,0,.35);
+  --radius-modal: 10px;
+  --sel: #cfe2ff;
+  --titlebar-bg: #111827;
+  --titlebar-fg: #f9fafb;
+  --tb-btn: #374151;
+  --tb-btn-hover: #4b5563;
+  --tb-border: #4b5563;
+  --quote-bg: #ecfdf5;
+  --quote-border: #34d399;
+  --inline-code-bg: #f3f4f6;
+  --th-bg: #f3f4f6;
+  --cell-border: #d1d5db;
+  --warn-bg: #fef3c7;
+  --warn-fg: #92400e;
+  --danger: #dc2626;
+  /* 查找高亮：命中文字色 + 命中底色。
+     亮色主题下 rgba(255,213,79,.45) 叠在 #ffffff 上得到 #ffecb0，
+     与正文 #1f2937 的对比度 12.5:1，达标。
+     暗色主题下同样的半透明黄叠在 #22252b 上得到 #857439，与正文 #d6d9de
+     只有 3.28:1（< 4.5:1）—— 半透明前景色必须**逐通道**与背景混合后重算，
+     不能把整个 hex 当单通道送进亮度函数。改为不透明底色 + 深色文字：
+     #ffd54f 与 #1f2328 的对比度 11.2:1。 */
+  /* 查找高亮：命中文字色 + 命中底色 + 当前命中的描边。
+     亮色主题：普通命中用「淡琥珀」，当前命中用「浓琥珀」+ 深棕描边 ——
+     二者同色系但明度差明显，再加一圈描边作为第二重视觉线索。
+     描边色对**高亮底色**须 ≥ 3:1（UI 组件边界门槛）：#7a3b00 对 #ffb020 = 4.68:1、
+     对暗色主题的 #f59e0b = 3.99:1。
+     文字一律用深色 #1f2328：#fff3b0 上 13.1:1、#ffb020 上 8.0:1，均达 AA。
+     暗色主题：普通命中 #ffd54f、当前命中改为「橙」#f59e0b（与普通命中拉开色相），
+     文字 #1f2328 → 分别为 11.2:1 与 7.4:1。
+     注：半透明前景色必须**逐通道**与背景混合后重算，
+     不能把整个 hex 当单通道送进亮度函数。 */
+  --find-bg: #fff3b0;
+  --find-bg-current: #ffb020;
+  --find-fg: #1f2328;
+  --find-outline: #7a3b00;
+  --raw-html-bg: #f6f8fa;
+  --raw-html-border: #d0d7de;
+  --raw-html-fg: #57606a;
+  /* 代码块主题令牌（highlight.js 的 class → 项目令牌，亮暗各自一套） */
+  --code-bg: #f6f8fa;
+  --code-bar-bg: #eaeef2;
+  --code-fg: #24292f;
+  --code-border: #d0d7de;
+  --code-keyword: #cf222e;
+  --code-type: #0550ae;
+  --code-string: #0a3069;
+  --code-number: #0550ae;
+  --code-comment: #57606a;
+  --code-func: #8250df;
+  --code-var: #953800;
+  --code-tag: #116329;
+  --code-attr: #0550ae;
+  --code-meta: #57606a;
+  /* Markdown 标记符专属配色（CM6 用 Decoration 注入的 .mw-* class） */
+  --mw-header-mark: #8250df;
+  --mw-quote-mark: #1a7f37;
+  --mw-list-mark: #0550ae;
+  --mw-emphasis-mark: #bc4c00;
+  --mw-code-mark: #cf222e;
+  --mw-link-mark: #0969da;
+  /* 等宽字体栈：源码编辑器 / 预览代码块 / 行内代码 **共用**这一组令牌，
+     保证「两处源码编辑」与预览里的代码长得一样。 */
+  --mw-mono: Consolas, "Cascadia Mono", "Courier New", monospace;
+  /* 代码字号与行距（同样三处共用） */
+  --mw-code-size: 14px;
+  --mw-code-line: 1.65;
+  /* 行号槽宽度：源码模式据此把「编辑器整体」居中，行号紧贴代码。
+     实测 CM6 默认槽宽 = 行号列 20px + 折叠列 10px = 30px。
+     超过 999 行时 CM 会自己变宽，多出的几像素表现为行号与代码之间
+     几像素的空隙，不影响观感，故不做运行时测量。 */
+  --mw-gutter-w: 30px;
+}
+[data-theme="dark"] {
+  --bg: #1e2126;
+  --bg-side: #25282e;
+  --bg-editor: #22252b;
+  --bg-hover: #2d3138;
+  --fg: #d6d9de;
+  --fg-dim: #98a0ab;
+  --border: #3a3f47;
+  --accent: #34d399;
+  --accent-strong: #34d399;
+  --on-accent-strong: #06281f;
+  --on-danger: #2b0a0a;
+  --diff-add: #3fb950;
+  --diff-del: #f85149;
+  --dirty: #fbbf24;
+  --overlay-bg: rgba(0,0,0,.45);
+  --shadow-modal: 0 12px 40px rgba(0,0,0,.35);
+  --radius-modal: 10px;
+  --sel: #2f5480;
+  --titlebar-bg: #16181d;
+  --titlebar-fg: #e5e7eb;
+  --tb-btn: #2a2e35;
+  --tb-btn-hover: #3a3f47;
+  --tb-border: #3a3f47;
+  --quote-bg: #253029;
+  --quote-border: #2f9e6e;
+  --inline-code-bg: #2d3138;
+  --th-bg: #2a2e35;
+  --cell-border: #3a3f47;
+  --warn-bg: #4a3f1f;
+  --warn-fg: #fcd34d;
+  --danger: #f87171;
+  /* 暗色下查找高亮改为「亮底 + 深字」：#ffd54f 上放 #1f2328 → 11.2:1，
+     远超 WCAG AA 的 4.5:1；原先的半透明黄只有 3.28:1。 */
+  --find-bg: #ffd54f;
+  --find-bg-current: #f59e0b;
+  --find-fg: #1f2328;
+  --find-outline: #7a3b00;
+  --raw-html-bg: #262a31;
+  --raw-html-border: #3f4753;
+  --raw-html-fg: #9aa4b1;
+  /* 代码块主题令牌（暗色：深底 + GitHub Dark 配色） */
+  --code-bg: #1b1e23;
+  --code-bar-bg: #262b33;
+  --code-fg: #d6d9de;
+  --code-border: #3a3f47;
+  --code-keyword: #ff7b72;
+  --code-type: #79c0ff;
+  --code-string: #a5d6ff;
+  --code-number: #79c0ff;
+  --code-comment: #8b949e;
+  --code-func: #d2a8ff;
+  --code-var: #ffa657;
+  --code-tag: #7ee787;
+  --code-attr: #79c0ff;
+  --code-meta: #8b949e;
+  /* Markdown 标记符专属配色 */
+  --mw-header-mark: #d2a8ff;
+  --mw-quote-mark: #7ee787;
+  --mw-list-mark: #79c0ff;
+  --mw-emphasis-mark: #ffa657;
+  --mw-code-mark: #ff7b72;
+  --mw-link-mark: #79c0ff;
+}
+
+body {
+  font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: var(--fg);
+  background: var(--bg);
+}
+button, input, select, textarea { font: inherit; }
+
+/* 键盘用户始终可见焦点环；鼠标聚焦由各处 :focus:not(:focus-visible) 抑制 */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* 主题自适应滚动条（细、低饱和） */
+* { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; background: transparent; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--border); border: 2px solid transparent;
+  border-radius: 6px; background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--fg-dim); border: 2px solid transparent;
+  border-radius: 6px; background-clip: padding-box;
+}
+[data-theme="dark"] ::-webkit-scrollbar-thumb { background: #41464f; background-clip: padding-box; }
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: #5b626d; background-clip: padding-box; }
+
+.app { display: flex; flex-direction: column; height: 100%; }
+
+/* ---- 标题栏 ---- */
+.titlebar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 12px; background: var(--titlebar-bg); color: var(--titlebar-fg); flex: none;
+}
+.doc-title {
+  font-weight: 600; font-size: 14px; display: flex; align-items: center;
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.dirty-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dirty); margin-left: 6px; display: inline-block; flex: none; }
+.tb-actions { margin-left: auto; flex: none; display: flex; gap: 6px; align-items: center; }
+.tb-btn {
+  background: var(--tb-btn); color: var(--titlebar-fg); border: 1px solid var(--tb-border);
+  border-radius: 6px; padding: 3px 10px; cursor: pointer; font-size: 12px;
+}
+.tb-btn:hover { background: var(--tb-btn-hover); }
+.tb-label { white-space: nowrap; }
+
+/* 标题栏按钮分三档视觉权重（v1.9 重组）：
+   - primary：唯一的主按钮（保存），实心强调色
+   - ghost：次要操作，透明底无边框，hover 才显形 —— 标题栏默认态因此很安静
+   - 默认 tb-btn：保留给需要「有形」的场景（如窗口控制） */
+.tb-btn-primary {
+  background: var(--accent-strong);
+  color: var(--on-accent-strong);
+  border-color: var(--accent-strong);
+  font-weight: 600;
+}
+.tb-btn-primary:hover { background: var(--accent); border-color: var(--accent); }
+.tb-btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--titlebar-fg);
+  opacity: .78;
+}
+.tb-btn-ghost:hover { background: var(--tb-btn-hover); border-color: transparent; opacity: 1; }
+
+/* 编辑模式分段控件：当前态一眼可见 */
+.mode-segments {
+  display: inline-flex; align-items: center; gap: 0;
+  padding: 2px; border-radius: 7px;
+  background: var(--tb-btn);
+  border: 1px solid var(--tb-border);
+  flex: none;
+}
+.mode-segment {
+  border: none; background: transparent; color: var(--titlebar-fg);
+  font-size: 12px; line-height: 1; cursor: pointer;
+  padding: 5px 10px; border-radius: 5px; white-space: nowrap;
+  opacity: .7;
+}
+.mode-segment:hover { opacity: 1; }
+.mode-segment.active {
+  background: var(--accent-strong); color: var(--on-accent-strong);
+  opacity: 1; font-weight: 600;
+}
+.mode-segment:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* 「⋯ 更多」下拉菜单 */
+.title-menu-wrap { position: relative; flex: none; }
+.title-menu {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 50;
+  min-width: 244px; padding: 5px;
+  background: var(--bg-side); color: var(--fg);
+  border: 1px solid var(--border); border-radius: 9px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .3);
+}
+.title-menu-group + .title-menu-group { margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--border); }
+.title-menu-title {
+  padding: 5px 10px 3px; font-size: 11px; color: var(--fg-dim);
+  letter-spacing: .04em;
+}
+.title-menu-item {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  border: none; background: none; color: var(--fg); cursor: pointer;
+  font-size: 13px; text-align: left; padding: 6px 10px; border-radius: 6px;
+}
+.title-menu-item:hover, .title-menu-item:focus-visible { background: var(--bg-hover); outline: none; }
+.title-menu-item.danger { color: var(--danger); }
+.title-menu-check { width: 12px; flex: none; color: var(--accent); font-size: 12px; }
+.title-menu-label { flex: 1; white-space: nowrap; }
+.title-menu-shortcut { color: var(--fg-dim); font-size: 11px; font-family: Consolas, monospace; }
+.tb-caret { font-size: 10px; opacity: .7; margin-left: 1px; }
+/* 主题/模式按钮的按下态：激活时用强调色描边，与「普通按钮」区分 */
+.tb-btn.on { background: var(--accent-strong); border-color: var(--accent-strong); color: var(--on-accent-strong); }
+
+/* 交互反馈：按下位移 + 禁用态（覆盖标题栏/侧栏/弹窗/树工具栏等按钮） */
+.tb-btn:active, .sidebar-tabs button:active, .tab:active, .tab-close:active,
+.tree-toolbar button:active, .ctx-menu button:active, .recent-item:active,
+.palette-item:active, .history-item:active, .outline-item:active,
+.search-hit:active, .search-flags button:active, .find-row button:active,
+.modal-tabs button:active, .modal-restore:active, .modal-close:active,
+.settings-zoom button:active, .conflict-banner button:active {
+  transform: translateY(1px);
+}
+.tb-btn:disabled, .sidebar-tabs button:disabled, .tab-close:disabled,
+.tree-toolbar button:disabled, .ctx-menu button:disabled, .recent-item:disabled,
+.palette-item:disabled, .history-item:disabled, .outline-item:disabled,
+.search-hit:disabled, .search-flags button:disabled, .find-row button:disabled,
+.modal-tabs button:disabled, .modal-restore:disabled, .modal-close:disabled,
+.settings-zoom button:disabled, .conflict-banner button:disabled,
+button:disabled, input:disabled, select:disabled, textarea:disabled {
+  opacity: .5; cursor: not-allowed;
+}
+
+.win-controls { display: inline-flex; gap: 3px; margin-left: 6px; flex: none; }
+/* 窗口按钮：固定尺寸 + flex 居中，图标（SVG）严格居中，不受字体字形基线影响 */
+.win-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 26px; padding: 0;
+  font-size: 12px; line-height: 1;
+}
+.win-btn svg {
+  display: block;
+  width: 12px; height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.win-close:hover { background: var(--danger); border-color: var(--danger); color: var(--on-danger); }
+
+/* 窄窗：**隐去按钮文字、保留图标与功能**。
+   旧实现把「打开 / 文件夹 / 最近 / 主题 / 设置」整块隐藏 —— 用户反馈
+   「头部的功能按钮功能有问题」，实际是这些按钮**直接消失了**：
+   打开文件与打开文件夹是主流程入口，窄窗下反而用不了。
+   现在改为只隐藏 .tb-label 文字，图标、title 提示与 aria-label 全部保留。 */
+@media (max-width: 1100px) {
+  .tb-actions .tb-label { display: none; }
+  .tb-actions .tb-btn { padding-left: 8px; padding-right: 8px; }
+  .tb-actions .tb-caret { display: none; }
+}
+/* 更窄时连分隔竖线也收掉，给窗口控制腾出空间 */
+@media (max-width: 960px) {
+  .tb-actions .tb-btn { border-left-color: transparent; padding-left: 6px; padding-right: 6px; margin-left: 0; }
+}
+/* 分段控件在窄窗下保留文字（它是三态关系的唯一表达），但压缩内边距 */
+@media (max-width: 1100px) {
+  .mode-segment { padding: 5px 7px; font-size: 11px; }
+}
+@media (max-width: 820px) {
+  /* 极窄：只显示当前模式的名字，其余靠点击切换 */
+  .mode-segments .mode-segment:not(.active) { display: none; }
+}
+
+.recent-wrap { position: relative; }
+.popover-backdrop { position: fixed; inset: 0; z-index: 40; }
+.recent-popover {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 50;
+  width: 320px; max-height: 360px; overflow: auto;
+  background: var(--bg-side); border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25); padding: 4px;
+}
+.recent-item {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  width: 100%; padding: 6px 10px; border: none; background: none; cursor: pointer;
+  color: var(--fg); font-size: 13px; border-radius: 6px; text-align: left;
+}
+.recent-item:hover { background: var(--bg-hover); }
+.recent-dir { color: var(--fg-dim); font-size: 11px; }
+
+/* ---- 标签栏 ---- */
+.tabbar {
+  flex: none; display: flex; gap: 2px; overflow-x: auto;
+  background: var(--bg-side); border-bottom: 1px solid var(--border); padding: 4px 8px 0;
+}
+.tab {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 10px; font-size: 12px; cursor: pointer;
+  border: 1px solid transparent; border-bottom: none;
+  border-radius: 8px 8px 0 0; color: var(--fg-dim); white-space: nowrap;
+}
+.tab:hover { background: var(--bg-hover); }
+.tab.active { background: var(--bg-editor); border-color: var(--border); color: var(--fg); }
+.tab-name { display: flex; align-items: center; }
+.tab-close {
+  border: none; background: none; color: var(--fg-dim); cursor: pointer;
+  font-size: 14px; line-height: 1; padding: 0 2px; border-radius: 4px;
+}
+.tab-close:hover { background: var(--bg-hover); color: var(--danger); }
+
+/* ---- 冲突提示 ---- */
+.conflict-banner {
+  flex: none; display: flex; align-items: center; gap: 10px;
+  padding: 6px 16px; background: var(--warn-bg); color: var(--warn-fg); font-size: 13px;
+}
+.conflict-banner button {
+  border: 1px solid currentColor; background: none; color: inherit;
+  border-radius: 6px; padding: 2px 10px; cursor: pointer; font-size: 12px;
+}
+
+/* ---- 主区 ---- */
+.main { flex: 1; display: flex; min-height: 0; }
+.sidebar {
+  width: var(--sidebar-width, 260px); flex: none; display: flex; flex-direction: column;
+  background: var(--bg-side); border-right: 1px solid var(--border);
+}
+.sidebar-tabs { display: flex; flex: none; border-bottom: 1px solid var(--border); }
+.sidebar-tabs button {
+  flex: 1; padding: 7px 0; border: none; background: none; cursor: pointer;
+  color: var(--fg-dim); font-size: 13px; border-bottom: 2px solid transparent;
+}
+.sidebar-tabs button.active { color: var(--fg); border-bottom-color: var(--accent); }
+.sidebar-body { flex: 1; overflow: auto; }
+.panel-empty { padding: 24px 16px; color: var(--fg-dim); font-size: 12px; text-align: center; line-height: 1.8; }
+
+/* 文件树 */
+.tree-toolbar { padding: 6px 8px; border-bottom: 1px solid var(--border); }
+.tree-toolbar button {
+  border: 1px solid var(--border); background: var(--bg-editor); color: var(--fg);
+  border-radius: 6px; padding: 2px 10px; cursor: pointer; font-size: 12px;
+}
+.tree-row {
+  display: flex; flex-wrap: wrap; align-items: center;
+  column-gap: 4px; row-gap: 0; padding: 3px 8px;
+  cursor: pointer; font-size: 13px; white-space: nowrap; overflow: hidden;
+}
+.tree-row:hover { background: var(--bg-hover); }
+.tree-row.active { background: var(--sel); }
+.tree-arrow { width: 12px; flex: none; color: var(--fg-dim); font-size: 10px; }
+.tree-name { overflow: hidden; text-overflow: ellipsis; }
+/* 超大目录的条目数标注：默认折叠时告诉用户里面有多少内容 */
+.tree-count {
+  flex: none; color: var(--fg-dim); font-size: 11px;
+  padding: 0 5px; border-radius: 8px; background: var(--bg-hover);
+  font-variant-numeric: tabular-nums;
+}
+/* ARIA tree：子节点容器嵌在父 treeitem 内部，独占一行 */
+.tree-group { flex: 0 0 100%; display: block; min-width: 0; }
+/* 目录行悬停/选中时，子树区域保持侧栏底色，避免高亮渗到子节点 */
+.tree-row:hover > .tree-group,
+.tree-row.active > .tree-group { background: var(--bg-side); }
+
+.ctx-menu {
+  position: fixed; z-index: 60; min-width: 120px;
+  max-width: calc(100vw - 8px); max-height: calc(100vh - 8px); overflow: auto;
+  background: var(--bg-side); border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25); padding: 4px; display: flex; flex-direction: column;
+}
+.ctx-menu button {
+  border: none; background: none; color: var(--fg); text-align: left;
+  padding: 6px 12px; cursor: pointer; font-size: 13px; border-radius: 6px;
+}
+.ctx-menu button:hover { background: var(--bg-hover); }
+.ctx-menu button.danger { color: var(--danger); }
+
+/* 大纲 */
+.outline { padding: 6px 0; }
+.outline-item {
+  display: block; width: 100%; border: none; background: none; cursor: pointer;
+  color: var(--fg); font-size: 13px; text-align: left; padding: 4px 8px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.outline-item:hover { background: var(--bg-hover); }
+.outline-item.active { color: var(--accent); font-weight: 600; }
+
+/* ---- 编辑区 ---- */
+.editor-area { flex: 1; overflow: auto; min-width: 0; background: var(--bg-editor); }
+/*
+ * 编辑区上方的工具条容器（查找条 + 表格工具栏）。
+ *
+ * 为什么要包一层：两者都是 `.editor-area`（overflow:auto 滚动容器）的子元素。
+ * - `.find-bar` 原本没有定位 → 在长文档里**会随内容滚出视野**；更糟的是按 Ctrl+F
+ *   把它插到滚动容器顶部会把视图**拉回文档开头**（实测：scrollTop 2500 → 0），
+ *   用户正要找的内容瞬间消失。
+ * - `.table-toolbar` 原本是 `position: sticky; top: 0`。
+ * 若两者各自 sticky 到 top:0，会在同时出现时**互相重叠**。
+ * 故统一由本容器 sticky，内部各工具条改为 static。
+ */
+.editor-sticky-bar {
+  position: sticky; top: 0; z-index: 20;
+  background: var(--bg-side);
+  box-shadow: 0 1px 0 var(--border);
+}
+.table-toolbar {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 12px; background: var(--bg-side); border-bottom: 1px solid var(--border);
+}
+.table-toolbar-label { font-size: 12px; color: var(--fg-dim); margin-right: 4px; }
+.table-toolbar button {
+  border: 1px solid var(--border); background: var(--bg-editor); color: var(--fg);
+  border-radius: 6px; padding: 2px 10px; cursor: pointer; font-size: 12px;
+}
+.table-toolbar button:hover { background: var(--bg-hover); }
+.editor-wrap { min-height: 100%; }
+.editor-wrap.hidden { display: none; }
+
+.ProseMirror {
+  /* max-width 随缩放联动：SPEC §7「缩放联动行宽恒定」指每行**字符数**恒定，
+     若宽度固定，放大字号会让每行字数减半（实测 200% 时 860px 容器里每行仅 ~21 字）。
+     max-width 会被父容器宽度自然约束，窄窗下不会溢出。 */
+  max-width: calc(860px * var(--editor-zoom, 1)); margin: 0 auto; padding: 32px 40px 80px;
+  min-height: 100%; background: var(--bg-editor);
+  line-height: 1.75; font-size: calc(16px * var(--editor-zoom, 1)); color: var(--fg);
+  /* 光标跟随主题强调色：默认的深灰/系统蓝看着像「没配过」。
+     亮色 #0a754d on #ffffff = 5.73:1，暗色 #34d399 on #22252b = 7.99:1，均达 AA。 */
+  caret-color: var(--accent);
+}
+.ProseMirror:focus:not(:focus-visible) { outline: none; }
+/* 焦点指示：写在**正文左缘**的 2px 渐隐强调线。
+   - 之前是 `inset 3px 0 0 0`，落在编辑区盒子的左缘 —— 而正文有 40px 左内边距，
+     于是这条线孤零零挂在正文左侧 40px 的空白里，与内容脱节（实测线在 x=332、
+     正文在 x=372）。
+   - 整框 2px 强调色更糟：把整个写作面框成「一个输入框」。
+   现在用伪元素画在正文起点处（left = padding-left = 40px），上浓下淡，
+   既有明确的焦点指示（WCAG 2.4.7），又不喧宾夺主，且不改变任何文字布局。 */
+.ProseMirror:focus-visible { outline: none; box-shadow: none; }
+/* 只有**键盘导航**进入编辑区时才挂 .kb-focus（见 src/editor/focus-indicator.ts）：
+   Chrome 对 contenteditable 的 :focus-visible 总是匹配，用它会让这条线变成
+   画布上的常驻元素 —— 鼠标用户由光标表达位置即可，不需要装饰。
+   类名挂在编辑器容器上（.editor-wrap），线画在 .ProseMirror 上 ——
+   不依赖 ProseMirror 的内部 DOM 结构。 */
+.editor-wrap.kb-focus .ProseMirror::before {
+  content: "";
+  position: absolute;
+  left: 40px;
+  top: 24px;
+  bottom: 24px;
+  width: 2px;
+  border-radius: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--accent) 75%, transparent),
+    color-mix(in srgb, var(--accent) 6%, transparent)
+  );
+}
+.ProseMirror > * + * { margin-top: 0.75em; }
+.ProseMirror h1 { font-size: 1.9em; border-bottom: 1px solid var(--border); padding-bottom: 0.3em; }
+.ProseMirror h2 { font-size: 1.5em; border-bottom: 1px solid var(--border); padding-bottom: 0.25em; }
+.ProseMirror h3 { font-size: 1.25em; }
+.ProseMirror blockquote {
+  border-left: 4px solid var(--quote-border); background: var(--quote-bg);
+  margin-left: 0; padding: 8px 16px; color: var(--fg);
+}
+.ProseMirror table { border-collapse: collapse; width: 100%; }
+.ProseMirror th, .ProseMirror td { border: 1px solid var(--cell-border); padding: 6px 12px; text-align: left; }
+.ProseMirror th { background: var(--th-bg); }
+.ProseMirror hr { border: none; border-top: 2px solid var(--border); margin: 1.5em 0; }
+.ProseMirror code {
+  background: var(--inline-code-bg); border-radius: 4px; padding: 2px 5px;
+  font-family: var(--mw-mono);
+  font-size: var(--mw-code-size);
+}
+.ProseMirror ul[data-type="taskList"] { list-style: none; padding-left: 0.5em; }
+.ProseMirror ul[data-type="taskList"] li { display: flex; gap: 8px; align-items: flex-start; }
+.ProseMirror ul[data-type="taskList"] li > label { margin-top: 0.3em; }
+.ProseMirror img { max-width: 100%; }
+.ProseMirror a { color: var(--accent); }
+
+/* ---- 代码块：主题跟随（亮色浅底 / 暗色深底）----
+   以前是硬编码的 atom-one-dark 深底（#282c34），亮暗两套主题完全相同，
+   亮色页面里嵌一块深色，与整页调性冲突。
+   现在把 highlight.js 的 class 映射到项目令牌，两套主题各自协调，
+   且**不引入任何新依赖**（hljs 主题 CSS 是全局 class，亮暗不能同时引）。 */
+.code-block {
+  border-radius: 8px; overflow: hidden;
+  background: var(--code-bg); color: var(--code-fg);
+  border: 1px solid var(--code-border);
+}
+.code-block-bar {
+  display: flex; justify-content: flex-end; padding: 4px 8px;
+  background: var(--code-bar-bg); border-bottom: 1px solid var(--code-border);
+}
+.code-block-lang {
+  background: var(--code-bg); color: var(--fg-dim); border: 1px solid var(--code-border);
+  border-radius: 4px; font-size: 12px; padding: 2px 6px;
+}
+.code-block pre {
+  margin: 0;
+  font-family: var(--mw-mono);
+  font-size: calc(var(--mw-code-size) * var(--editor-zoom, 1));
+  line-height: var(--mw-code-line);
+}
+.code-block code.hljs {
+  display: block; padding: 12px 16px; overflow-x: auto;
+  font-family: var(--mw-mono);
+  font-size: calc(var(--mw-code-size) * var(--editor-zoom, 1));
+  line-height: var(--mw-code-line);
+  background: var(--code-bg); color: var(--code-fg);
+}
+.code-block code { background: none; padding: 0; border-radius: 0; }
+
+/* highlight.js 语义 class → 项目令牌（两套主题各自一组值） */
+.code-block .hljs-keyword,
+.code-block .hljs-selector-tag,
+.code-block .hljs-literal { color: var(--code-keyword); }
+.code-block .hljs-type,
+.code-block .hljs-built_in,
+.code-block .hljs-class .hljs-title { color: var(--code-type); }
+.code-block .hljs-string,
+.code-block .hljs-char,
+.code-block .hljs-regexp { color: var(--code-string); }
+.code-block .hljs-number { color: var(--code-number); }
+.code-block .hljs-comment,
+.code-block .hljs-quote { color: var(--code-comment); font-style: italic; }
+.code-block .hljs-title,
+.code-block .hljs-title.function_,
+.code-block .hljs-section { color: var(--code-func); }
+.code-block .hljs-variable,
+.code-block .hljs-template-variable,
+.code-block .hljs-params,
+.code-block .hljs-attr { color: var(--code-var); }
+.code-block .hljs-tag { color: var(--code-tag); }
+.code-block .hljs-attribute,
+.code-block .hljs-name { color: var(--code-attr); }
+.code-block .hljs-meta,
+.code-block .hljs-symbol,
+.code-block .hljs-bullet { color: var(--code-meta); }
+.code-block .hljs-emphasis { font-style: italic; }
+.code-block .hljs-strong { font-weight: 700; }
+
+/* ---- 随航编辑：源码 ｜ 实时预览 并排 ----
+   用 CSS Grid 而非 flex：grid 能让顶部工具条**横跨两栏**，
+   而 flex 会把它变成一个并列的 flex item（被挤进第一栏）。
+
+   硬约束：`.editor-wrap`（富文本容器的 DOM 节点）在 DOM 树里的位置
+   三态必须完全一致 —— tiptap 实例只在挂载时创建一次并持有该节点，
+   若 React 因分支切换重建它，编辑器会变成孤儿（状态还在、DOM 脱钩，
+   表现为编辑器失去响应）。故三态共用同一棵子树，只用 class 控制显隐。 */
+.editor-area.split {
+  display: grid;
+  grid-template-columns: minmax(0, var(--split-ratio, 50%)) 6px minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+}
+.editor-area.split .editor-sticky-bar { grid-column: 1 / -1; grid-row: 1; }
+.editor-area.split .split-source { grid-column: 1; grid-row: 2; min-width: 0; overflow: hidden; }
+.editor-area.split .split-divider { grid-column: 2; grid-row: 2; }
+.editor-area.split .editor-wrap { grid-column: 3; grid-row: 2; min-width: 0; overflow: auto; }
+
+.split-source.hidden, .split-divider.hidden { display: none; }
+.split-divider { cursor: col-resize; background: var(--border); }
+.split-divider:hover { background: var(--accent); }
+.split-divider:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.source-mode { height: 100%; }
+.source-mode .cm-editor {
+  height: 100%;
+  font-size: calc(14px * var(--editor-zoom, 1));
+  /* 源码模式让「编辑器整体」居中，而不是「内容」居中：
+     行号贴在区域最左、内容居中时，中间会空出约 120px 的断裂空白
+     （实测行号 x≈210、代码 x≈330）。整体居中后行号紧贴代码。
+     宽度 = 富文本的 860px 正文 + 行号槽 --mw-gutter-w，两模式行宽一致。 */
+  max-width: calc(860px * var(--editor-zoom, 1) + var(--mw-gutter-w));
+  margin: 0 auto;
+}
+.source-mode .cm-scroller { font-family: Consolas, "Courier New", monospace; }
+.source-mode .cm-content {
+  /* 与富文本 .ProseMirror 的盒模型完全对齐：同样 860px 盒宽 + 同样 40px 左右内边距
+     → 两模式正文行宽一致（780px），切换模式时文字不会重排。 */
+  max-width: calc(860px * var(--editor-zoom, 1));
+  margin: 0;
+  padding: 32px 40px 80px;
+}
+
+/* ---- 状态栏 ---- */
+.statusbar {
+  flex: none; display: flex; gap: 16px; padding: 4px 16px;
+  background: var(--bg-side); color: var(--fg-dim); font-size: 12px;
+  border-top: 1px solid var(--border);
+}
+.statusbar .spacer { flex: 1; }
+.statusbar .goal { display: inline-flex; align-items: center; gap: 6px; }
+.statusbar .goal-bar { width: 72px; height: 6px; border-radius: 3px; background: var(--border); overflow: hidden; display: inline-block; }
+.statusbar .goal-fill { display: block; height: 100%; background: var(--accent); transition: width .3s; }
+
+/* ---- M2：快照历史 ---- */
+.history { padding: 8px; overflow-y: auto; height: 100%; }
+.history-item {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px;
+  background: var(--bg); color: var(--fg); cursor: pointer; margin-bottom: 6px;
+  font-size: 12px; text-align: left;
+}
+.history-item:hover { border-color: var(--accent); }
+.history-time { flex: 1; }
+.history-bytes { color: var(--fg-dim); }
+.history-badge { padding: 1px 6px; border-radius: 8px; background: var(--accent-strong); color: var(--on-accent-strong); font-size: 11px; }
+.history-badge.auto { background: var(--border); color: var(--fg-dim); }
+
+.modal-backdrop {
+  position: fixed; inset: 0; background: var(--overlay-bg); z-index: 90;
+  display: flex; align-items: center; justify-content: center;
+}
+.modal {
+  width: min(860px, 92vw); max-height: 84vh; display: flex; flex-direction: column;
+  background: var(--bg); color: var(--fg); border: 1px solid var(--border);
+  border-radius: var(--radius-modal); box-shadow: var(--shadow-modal);
+}
+.modal-head { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+.modal-title { flex: 1; font-size: 13px; font-weight: 600; }
+.modal-tabs { display: flex; gap: 4px; }
+.modal-tabs button {
+  border: 1px solid var(--border); background: var(--bg-side); color: var(--fg-dim);
+  border-radius: 6px; padding: 3px 10px; font-size: 12px; cursor: pointer;
+}
+.modal-tabs button.active { background: var(--accent-strong); border-color: var(--accent-strong); color: var(--on-accent-strong); }
+.modal-restore {
+  border: 1px solid var(--accent-strong); background: var(--accent-strong); color: var(--on-accent-strong); border-radius: 6px;
+  padding: 4px 12px; font-size: 12px; cursor: pointer;
+}
+.modal-close { border: none; background: none; color: var(--fg-dim); font-size: 18px; cursor: pointer; }
+.modal-body { overflow: auto; padding: 12px 14px; }
+.modal-foot { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--border); }
+.diff { font-family: Consolas, "Courier New", monospace; font-size: 12px; line-height: 1.6; }
+.diff-line { display: flex; gap: 8px; white-space: pre-wrap; word-break: break-all; padding: 0 6px; border-radius: 3px; }
+.diff-line.add { background: rgba(46,160,67,.16); color: var(--diff-add); }
+.diff-line.del { background: rgba(248,81,73,.14); color: var(--diff-del); }
+.diff-sign { flex: none; width: 12px; }
+.diff-legend { font-size: 11px; color: var(--fg-dim); margin-bottom: 8px; }
+.snapshot-preview { white-space: pre-wrap; font-family: Consolas, "Courier New", monospace; font-size: 12px; line-height: 1.6; }
+
+/* ---- M2：跨文件搜索 ---- */
+.search-panel { display: flex; flex-direction: column; height: 100%; }
+.search-box { display: flex; gap: 6px; padding: 8px; border-bottom: 1px solid var(--border); }
+.search-box input {
+  flex: 1; min-width: 0; background: var(--bg); color: var(--fg);
+  border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; font-size: 13px;
+}
+.search-box input:focus:not(:focus-visible) { outline: none; border-color: var(--accent); }
+.search-box input:focus-visible { border-color: var(--accent); }
+.search-flags { display: flex; gap: 3px; }
+.search-flags button {
+  width: 26px; border: 1px solid var(--border); background: var(--bg); color: var(--fg-dim);
+  border-radius: 5px; font-size: 11px; cursor: pointer;
+}
+.search-flags button.on { background: var(--accent-strong); border-color: var(--accent-strong); color: var(--on-accent-strong); }
+.search-results { flex: 1; overflow-y: auto; padding: 6px 8px; }
+.search-group { margin-bottom: 8px; }
+.search-file { font-size: 12px; font-weight: 600; color: var(--fg-dim); padding: 3px 4px; }
+.search-count { font-weight: 400; margin-left: 6px; }
+.search-hit {
+  display: flex; gap: 8px; width: 100%; text-align: left; border: none; background: none;
+  color: var(--fg); padding: 3px 6px; border-radius: 4px; cursor: pointer; font-size: 12px;
+}
+.search-hit:hover, .search-hit:focus-visible { background: var(--bg-hover); }
+.search-lineno { flex: none; color: var(--fg-dim); min-width: 30px; text-align: right; }
+.search-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.search-stats { flex: none; padding: 6px 10px; border-top: 1px solid var(--border); font-size: 11px; color: var(--fg-dim); }
+.search-error { padding: 8px 10px; color: var(--diff-del); font-size: 12px; }
+
+/* ---- M2：命令面板 ---- */
+.palette-backdrop {
+  position: fixed; inset: 0; background: var(--overlay-bg); z-index: 100;
+  display: flex; justify-content: center; padding-top: 12vh;
+}
+.palette {
+  width: min(560px, 90vw); max-height: 60vh; display: flex; flex-direction: column;
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-modal);
+  box-shadow: var(--shadow-modal); overflow: hidden; align-self: flex-start;
+}
+.palette input {
+  border: none; border-bottom: 1px solid var(--border); background: var(--bg);
+  color: var(--fg); padding: 12px 14px; font-size: 14px;
+}
+.palette input:focus:not(:focus-visible) { outline: none; }
+.palette-list { overflow-y: auto; padding: 6px; }
+.palette-item {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  border: none; background: none; color: var(--fg); padding: 8px 10px;
+  border-radius: 6px; cursor: pointer; font-size: 13px;
+}
+.palette-item.active { background: var(--accent-strong); color: var(--on-accent-strong); }
+.palette-item.active .palette-shortcut { color: var(--on-accent-strong); opacity: .8; }
+.palette-shortcut { margin-left: auto; font-size: 11px; color: var(--fg-dim); }
+
+/* ---- M2：专注模式 ---- */
+/*
+ * opacity 取 0.65 而非 0.5：
+ * 非当前段落以 opacity 叠在编辑底色上，0.5 时实测正文对比度仅 3.16:1（亮色
+ * #8f9194 on #ffffff）/ 4.21:1（暗色），**均低于 WCAG AA 正文要求的 4.5:1**；
+ * 0.65 时为 4.98:1（亮色）/ 6.08:1（暗色），两套主题都达标。
+ */
+.focus-mode .ProseMirror > * { opacity: .65; transition: opacity .2s; }
+/* 当前段落除了恢复不透明，还加一条左侧强调线 ——
+   只靠 opacity 0.65 ↔ 1 的差别太细微，用户会以为「专注模式没生效」。
+   用 box-shadow 而不是 padding：加 padding 会让文字横向跳动。 */
+.focus-mode .ProseMirror > .focus-current {
+  opacity: 1;
+  box-shadow: inset 2px 0 0 0 var(--accent);
+}
+
+/* ---- M3：WYSIWYG 查找替换 ---- */
+.find-bar {
+  flex: none; display: flex; flex-direction: column; gap: 6px;
+  padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--bg-side);
+}
+.find-row { display: flex; align-items: center; gap: 6px; }
+.find-row input {
+  flex: 1; min-width: 0; max-width: 320px; background: var(--bg); color: var(--fg);
+  border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; font-size: 13px;
+}
+.find-row input:focus:not(:focus-visible) { outline: none; border-color: var(--accent); }
+.find-row input:focus-visible { border-color: var(--accent); }
+.find-row button {
+  border: 1px solid var(--border); background: var(--bg); color: var(--fg-dim);
+  border-radius: 5px; padding: 3px 8px; font-size: 12px; cursor: pointer;
+}
+.find-row button.on { background: var(--accent-strong); border-color: var(--accent-strong); color: var(--on-accent-strong); }
+.find-row button:hover { border-color: var(--accent); }
+.find-count { font-size: 12px; color: var(--fg-dim); min-width: 40px; }
+.find-close { margin-left: auto; }
+.find-match { background: var(--find-bg); color: var(--find-fg); border-radius: 2px; }
+.find-match-current {
+  background: var(--find-bg-current);
+  color: var(--find-fg);
+  /* 当前命中再加一圈描边：底色相近时（浅色主题里普通命中与当前命中
+     都是暖黄）靠颜色区分不够，用描边给出第二重视觉线索。 */
+  box-shadow: 0 0 0 1px var(--find-outline);
+  border-radius: 2px;
+}
+
+/* ---- Markdown 标记符专属配色 ----
+   lezer 把 # > - * ` [ 六种标记符都映射到同一个 tag，HighlightStyle 无法区分，
+   改由 CM6 的 Decoration 注入稳定的 .mw-* class（见 src/editor/cm-marks.ts）。 */
+.mw-HeaderMark { color: var(--mw-header-mark); font-weight: 700; }
+.mw-QuoteMark { color: var(--mw-quote-mark); font-weight: 700; }
+.mw-ListMark { color: var(--mw-list-mark); font-weight: 700; }
+.mw-EmphasisMark { color: var(--mw-emphasis-mark); }
+.mw-CodeMark { color: var(--mw-code-mark); font-weight: 700; }
+.mw-LinkMark { color: var(--mw-link-mark); font-weight: 700; }
+
+/* ---- 原始 HTML 块（注释 / <script> / 带属性 div）----
+   这些内容在编辑器里按「原文」呈现，用等宽字体 + 左侧竖线与正文区分，
+   让用户知道这是一段不会被渲染的原始标记，而不是普通文字。 */
+.ProseMirror .mw-raw-html {
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 0.88em;
+  line-height: 1.6;
+  color: var(--raw-html-fg);
+  background: var(--raw-html-bg);
+  border-left: 3px solid var(--raw-html-border);
+  border-radius: 0 4px 4px 0;
+  padding: 6px 10px;
+  margin: 0.75em 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ---- 空文档占位符 ----
+   编辑区空白一片时没有任何提示，用户不知道是否可以/如何开始输入。
+   占位符由 @tiptap/extensions 的 Placeholder 扩展注入 data-placeholder，这里只负责呈现。
+
+   两个必须注意的细节（都是实测踩出来的）：
+   1. **段落必须 position: relative** —— 段落默认是 static，绝对定位的 ::before 会
+      跑到更外层的祖先上，位置飘忽且与光标叠在一起（实测光标正好压住「开」字）。
+   2. **要���开光标宽度** —— 光标画在段落内容起点，占位符 left 加 3px 才不重叠。
+
+   呈现分两层：主提示一行，辅助提示（语法 / 快捷键）另起一行、更小更淡，
+   合成一长串会变成一堵墙、也看不出主次。只在**整篇为空**时出现
+   （.is-editor-empty），文档中间的空段落不再冒提示。 */
+.ProseMirror .is-editor-empty { position: relative; }
+.ProseMirror .is-editor-empty::before {
+  content: attr(data-placeholder);
+  position: absolute;
+  left: 3px;
+  top: 0;
+  color: var(--fg-dim);
+  opacity: .8;
+  pointer-events: none;
+  font-size: 1.05em;
+  line-height: inherit;
+}
+.ProseMirror .is-editor-empty::after {
+  content: "Markdown 语法即时渲染 · Ctrl+/ 切换源码模式";
+  position: absolute;
+  left: 3px;
+  top: 2.3em;
+  color: var(--fg-dim);
+  opacity: .5;
+  pointer-events: none;
+  font-size: .82em;
+}
+
+/* ---- 表格工具栏 ---- */
+.table-toolbar button:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+.table-toolbar button:disabled:hover {
+  border-color: var(--border);
+  background: transparent;
+}
+
+/* ---- M3：设置面板 ---- */
+.settings-modal { width: min(520px, 92vw); }
+.settings-body { display: flex; flex-direction: column; gap: 10px; }
+.settings-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13px; }
+.settings-row > span:first-child { color: var(--fg); }
+.settings-row select, .settings-row input[type="number"] {
+  background: var(--bg-editor); color: var(--fg); border: 1px solid var(--border);
+  border-radius: 6px; padding: 4px 8px; font-size: 13px; min-width: 140px;
+}
+.settings-row input[type="number"] { width: 140px; }
+.settings-row input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; }
+.settings-hint { font-size: 11px; color: var(--fg-dim); line-height: 1.6; word-break: break-all; }
+.settings-zoom { display: inline-flex; align-items: center; gap: 8px; }
+.settings-zoom button {
+  border: 1px solid var(--border); background: var(--bg-editor); color: var(--fg);
+  border-radius: 6px; padding: 2px 10px; cursor: pointer; font-size: 12px;
+}
+.settings-zoom button:hover { background: var(--bg-hover); }
+
+/* ---- 无障碍：尊重系统减少动画偏好 ---- */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+
+/* ---- 帮助中心 ---- */
+.help-modal {
+  width: min(880px, 94vw);
+  max-height: min(78vh, 720px);
+  display: flex; flex-direction: column;
+  padding: 0;
+}
+.help-modal .modal-head { flex: none; }
+.help-body { display: flex; min-height: 0; flex: 1; }
+.help-nav {
+  flex: none; width: 168px; padding: 10px 8px; overflow: auto;
+  border-right: 1px solid var(--border); background: var(--bg-side);
+  display: flex; flex-direction: column; gap: 2px;
+}
+.help-nav:focus { outline: none; }
+.help-nav-item {
+  display: flex; align-items: center; gap: 8px;
+  border: none; background: none; cursor: pointer;
+  color: var(--fg); font-size: 13px; text-align: left;
+  padding: 7px 10px; border-radius: 6px; width: 100%;
+}
+.help-nav-item:hover { background: var(--bg-hover); }
+.help-nav-item.active { background: var(--accent); color: var(--on-accent-strong); font-weight: 600; }
+.help-content { flex: 1; min-width: 0; overflow: auto; padding: 16px 20px 24px; }
+.help-title { margin: 0 0 4px; font-size: 16px; color: var(--fg); }
+.help-desc { margin: 0 0 14px; font-size: 13px; color: var(--fg-dim); line-height: 1.7; }
+.help-group { margin-bottom: 18px; }
+.help-group-title { margin: 0 0 6px; font-size: 13px; color: var(--accent); font-weight: 600; }
+.help-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.help-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.help-table tr:last-child td { border-bottom: none; }
+.help-syntax { width: 34%; }
+.help-syntax code {
+  font-family: Consolas, "Courier New", monospace;
+  background: var(--inline-code-bg); color: var(--code-fg);
+  border-radius: 4px; padding: 2px 6px; font-size: 12px;
+  white-space: pre-wrap; word-break: break-all;
+}
+.help-desc-cell { color: var(--fg); line-height: 1.7; }
+.help-note { color: var(--fg-dim); font-size: 12px; margin-top: 2px; }
+.help-action { width: 64px; text-align: right; }
+.help-action .tb-btn { padding: 2px 10px; font-size: 12px; }
+.help-keys { width: 180px; }
+.help-keys kbd {
+  font-family: Consolas, "Courier New", monospace;
+  background: var(--inline-code-bg); color: var(--fg);
+  border: 1px solid var(--border); border-bottom-width: 2px;
+  border-radius: 4px; padding: 1px 6px; font-size: 12px;
+  white-space: nowrap;
+}
+.help-update { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.help-update-row { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; }
+.help-update-row span { color: var(--fg-dim); }
+.help-update-row b { color: var(--fg); font-weight: 600; }
+.help-ok {
+  background: var(--quote-bg); border-left: 3px solid var(--quote-border);
+  color: var(--fg); padding: 10px 12px; border-radius: 0 6px 6px 0; font-size: 13px; margin-bottom: 12px;
+}
+.help-warn {
+  background: var(--warn-bg); color: var(--warn-fg);
+  padding: 10px 12px; border-radius: 6px; font-size: 13px; margin-bottom: 12px;
+}
+.help-newver {
+  background: var(--quote-bg); border-left: 3px solid var(--quote-border);
+  padding: 12px 14px; border-radius: 0 6px 6px 0; margin-bottom: 12px;
+}
+.help-newver-head { font-weight: 700; color: var(--fg); margin-bottom: 6px; }
+.help-pub { color: var(--fg-dim); font-size: 12px; margin-top: 4px; }
+.help-notes {
+  font-family: Consolas, "Courier New", monospace; font-size: 12px;
+  background: var(--bg-editor); border: 1px solid var(--border); border-radius: 6px;
+  padding: 8px 10px; margin: 6px 0 0; white-space: pre-wrap; word-break: break-word;
+  color: var(--fg); max-height: 200px; overflow: auto;
+}
+.help-note-box {
+  background: var(--bg-side); border: 1px solid var(--border); border-radius: 8px;
+  padding: 12px 14px; font-size: 13px; line-height: 1.75; color: var(--fg);
+}
+.help-note-box p { margin: 0 0 8px; }
+.help-path {
+  display: block; font-family: Consolas, "Courier New", monospace; font-size: 12px;
+  background: var(--bg-editor); border: 1px solid var(--border); border-radius: 6px;
+  padding: 6px 10px; margin: 4px 0 10px; word-break: break-all; color: var(--fg);
+}
+.help-update-actions { display: flex; gap: 8px; margin-top: 12px; }
+.help-update-actions a.tb-btn { text-decoration: none; display: inline-flex; align-items: center; }
+
+
+/* ---- 源码视图的结构视觉（与预览里的结构一一对应）----
+   所见即所得一侧，围栏代码块有底色+边框、表格有边框与表头底色、引用块有左侧竖线；
+   源码侧原本全是纯文本 —— 同一份 Markdown 的两种呈现像两个产品。
+   下面这些 class 由 src/editor/cm-structure.ts 按语法树节点类型
+   （FencedCode / Blockquote / Table / TableHeader / TableDelimiter）逐行注入。 */
+.source-mode .cm-line.mw-src-fence {
+  background: var(--code-bg);
+  box-shadow: inset 3px 0 0 0 var(--code-border);
+  color: var(--code-fg);
+}
+.source-mode .cm-line.mw-src-quote {
+  box-shadow: inset 3px 0 0 0 var(--quote-border);
+  color: var(--fg-dim);
+  font-style: italic;
+}
+.source-mode .cm-line.mw-src-table {
+  background: var(--bg-side);
+  box-shadow: inset 0 0 0 1px var(--cell-border);
+}
+.source-mode .cm-line.mw-src-th {
+  background: var(--th-bg);
+  font-weight: 700;
+}
+.source-mode .cm-line.mw-src-td {
+  background: var(--bg-side);
+  color: var(--fg-dim);
+}
+/* 当前行高亮与结构底色叠加时，以结构底色为准（否则围栏代码块会忽明忽暗） */
+.source-mode .cm-line.cm-activeLine { background: transparent; }
+.source-mode .cm-line.cm-activeLine.mw-src-fence { background: var(--code-bg); }
+.source-mode .cm-line.cm-activeLine.mw-src-table { background: var(--bg-side); }
+.source-mode .cm-line.cm-activeLine.mw-src-th { background: var(--th-bg); }
+
+
+/* ---- CodeMirror 基础观感的覆盖（应用侧 CSS，特异度高于 CM 注入的主题）----
+   ① CM6 的 baseTheme 有意给聚焦的编辑器画了一圈 `outline: 1px dotted #212121`
+      （其源码注释：*"to make sure a focused editor is visually distinct"*）。
+      这圈虚线套住整个源码区，是「源码编辑器不好看」最扎眼的一处 —— 它画在**编辑区
+      外框**上，而不是内容上，看起来像一张贴在纸上的表格边框。
+      这里去掉它，改由「当前行高亮 + 光标」表达焦点（文本控件用光标表达焦点是 WCAG
+      允许的做法），并且只在**键盘聚焦**时给一条极淡的左边线。
+   ② 行距：CM 默认 1.4（14px → 19.6px），而预览里的代码块是 1.65 —— 同一个
+      「代码」两种行距，观感不一致。统一到 --mw-code-line。 */
+.source-mode .cm-editor,
+.source-mode .cm-editor.cm-focused {
+  outline: none !important;
+  font-family: var(--mw-mono);
+  font-size: calc(var(--mw-code-size) * var(--editor-zoom, 1));
+  line-height: var(--mw-code-line);
+}
+.source-mode .cm-content {
+  font-family: var(--mw-mono);
+  font-size: calc(var(--mw-code-size) * var(--editor-zoom, 1));
+  line-height: var(--mw-code-line);
+}
+/* 键盘聚焦时的极淡左边线（鼠标点击不出现） */
+.source-mode .cm-editor:focus-visible {
+  box-shadow: inset 2px 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent);
+}
+/* 当前行高亮：源码区里它是主要的焦点/位置指示，给足存在感 */
+.source-mode .cm-activeLine { background: var(--bg-hover); }
+.source-mode .cm-activeLineGutter { background: var(--bg-hover); }
+
+/* 状态栏的模式标记：专注 / 打字机 —— 开启后必须看得见 */
+.statusbar .mode-flag {
+  color: var(--accent);
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0 6px;
+  font-size: 11px;
+  line-height: 16px;
+}

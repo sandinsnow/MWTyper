@@ -1,0 +1,7 @@
+== 节点类型统计（json1） ==
+{"doc":1,"heading":2,"text":32,"paragraph":17,"image":1,"bulletList":2,"listItem":5,"orderedList":1,"taskList":1,"taskItem":2,"blockquote":1,"codeBlock":1,"table":1,"tableRow":3,"tableHeader":2,"tableCell":4,"inlineMath":1,"blockMath":1,"horizontalRule":1}
+OK 全部关键节点类型均被解析
+codeBlock attrs: [{"language":"ts"}]
+OK 判据2：md'→json' 与 json 深度相等（往返稳定）
+OK 判据1：规范化后逐行一致
+frontmatter 策略：剥离单独保管 + 序列化回贴（marked 不解析 YAML，属预期设计而非缺陷）

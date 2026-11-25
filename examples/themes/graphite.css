@@ -1,0 +1,12 @@
+/* 石墨 —— 中性灰阶，去掉一切彩色干扰（MWTyper 内置示例主题） */
+:root {
+  --mw-base-bg: #f4f4f5;
+  --mw-base-fg: #27272a;
+  --mw-base-accent: #52525b;
+}
+
+[data-theme="dark"] {
+  --mw-base-bg: #1a1a1c;
+  --mw-base-fg: #d4d4d8;
+  --mw-base-accent: #a1a1aa;
+}

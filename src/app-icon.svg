@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1f2937"/>
+      <stop offset="1" stop-color="#111827"/>
+    </linearGradient>
+  </defs>
+  <rect x="64" y="64" width="896" height="896" rx="200" fill="url(#bg)"/>
+  <rect x="64" y="64" width="896" height="896" rx="200" fill="none" stroke="#374151" stroke-width="8"/>
+  <!-- Markdown "M" 左半 + 写作光标 -->
+  <path d="M 232 704 L 232 320 L 336 320 L 448 512 L 560 320 L 664 320 L 664 704 L 568 704 L 568 480 L 448 672 L 328 480 L 328 704 Z" fill="#f9fafb"/>
+  <!-- 下箭头（Markdown 标志的右半意象） -->
+  <path d="M 736 320 L 816 320 L 816 560 L 880 560 L 776 712 L 672 560 L 736 560 Z" fill="#34d399"/>
+</svg>

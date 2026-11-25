@@ -1,0 +1,105 @@
+sequenceDiagram
+    autonumber
+    actor User
+    participant App as App.tsx (外壳/状态机)
+    participant UE as useEditor (薄封装)
+    participant PM as tiptap Editor (ProseMirror)
+    participant CM as SourceMode (CM6)
+    participant IPC as ipc.ts (Tauri/mock)
+    participant Rust as Rust commands
+    participant UI as UI 原语 (Toast/Modal)
+
+    %% ===== 初始化 =====
+    User->>App: 启动应用
+    App->>IPC: readSettings()
+    IPC->>Rust: read_settings
+    Rust-->>IPC: Settings JSON
+    IPC-->>App: settings
+    App->>UE: useEditor({extensions, rerenderOn})
+    UE->>PM: new Editor({element, extensions})
+    PM-->>UE: editor 实例
+    UE-->>App: {editor, elementRef}
+    App->>IPC: listThemes/themesDirPath
+    App->>App: applyCustomTheme(custom_theme) 注入 <style>
+
+    %% ===== 打开文件夹与文件 =====
+    User->>App: 打开文件夹 / 点击文件树
+    App->>IPC: pickFolder() / listTree(root)
+    IPC->>Rust: list_tree
+    Rust-->>App: TreeNode
+    User->>App: 打开文件 A
+    App->>IPC: readFile(pathA)
+    IPC->>Rust: read_file
+    Rust-->>App: textA
+    App->>App: stashActive() 快照当前 tab
+    Note over App: 修复 D1：leavingId/dirty 在调用瞬间<br/>捕获快照，setTabs 更新器只读局部常量
+    App->>App: loadBuffer(tabA) 重置会话基线/字数请求序号
+    App->>PM: commands.setContent(markdown.parse(body), emitUpdate:false)
+    App->>IPC: stats(textA)
+    IPC->>Rust: stats
+    Rust-->>App: Stats (校验 statsSeqRef 防乱序)
+    App->>IPC: snapshotSave(ws, path, text, auto=true)
+    IPC->>Rust: snapshot_save (hash 去重)
+    Rust-->>App: SnapshotMeta
+
+    %% ===== WYSIWYG 编辑与装饰器 =====
+    User->>PM: 输入文本（含代码块）
+    PM->>PM: transaction (docChanged)
+    PM-->>UE: on("transaction", tr)
+    UE->>UE: rerenderOn(tr) 谓词判断
+    Note over UE: 修复 D2 阶段一：仅 docChanged/selectionSet<br/>与 find meta 才 setTick，纯装饰事务不触发 App 重渲染
+    UE-->>App: setTick（必要时）
+    PM->>PM: highlightDecorations 插件 apply
+    Note over PM: B2：old.map(tr.mapping) + 仅改动 range<br/>重算高亮（不再全文 descendants）
+    App->>App: markChanged → 防抖 scheduleAutosave/scheduleStats
+
+    %% ===== 标签切换（D1/E01 关键路径） =====
+    User->>App: 立即切换到标签 B
+    App->>App: clearTimeout(autoTimer) 防止定时器写错标签
+    App->>App: stashActive() 快照 tabA 文本/dirty/path
+    App->>App: activeIdRef = tabB.id; loadBuffer(tabB)
+    App->>PM: setContent(tabB body)
+    App->>IPC: stats(textB) with statsSeqRef++
+
+    %% ===== 查找替换与装饰器 =====
+    User->>App: Ctrl+F 打开查找栏，输入关键字
+    App->>PM: findUpdate(editor, {query}) → tr.setMeta(findKey)
+    PM-->>UE: transaction（仅 meta，docChanged=false）
+    UE->>UE: rerenderOn 放行 findKey meta
+    UE-->>App: setTick → FindReplaceBar 显示命中计数
+    PM->>PM: find-replace apply 增量重算 matches（B2）
+    User->>App: 全部替换
+    App->>PM: replaceAll → tr.replaceWith（倒序）
+
+    %% ===== 源码模式与命中跳转 =====
+    User->>App: Ctrl+/ 切换源码
+    App->>PM: toSource() serialize + joinFrontmatter
+    App->>CM: 懒加载挂载 <SourceMode doc={sourceText} key={activeId}>
+    User->>App: 跨文件搜索点击命中行
+    App->>IPC: searchWorkspace(ws, q, flags)
+    IPC->>Rust: search_workspace（并行分块 + limit 截断）
+    Rust-->>App: SearchResult (hits/truncated/elapsed_ms)
+    App->>CM: 120ms 后 dispatch 选区到 line（ref 可清理）
+    Note over CM: 修复 E04/E09：SourceMode 增 doc 同步 effect<br/>与 onReady(null) 清理，避免悬挂引用
+
+    %% ===== 保存路径（C1 反馈） =====
+    User->>App: Ctrl+S
+    App->>IPC: saveFile(path, text)
+    IPC->>Rust: save_file（临时文件 + rename 原子写）
+    Rust-->>App: ok
+    App->>UI: Toast "已保存"（替代 window.alert）
+    App->>IPC: snapshotSave(ws, path, text, auto=false)
+    App->>IPC: refreshTree / pushRecent
+
+    %% ===== 设置持久化（C4/Q6） =====
+    User->>App: 调整设置（sidebar_width / zoom）
+    App->>App: patchSettings → 300ms 防抖
+    App->>IPC: writeSettings(settings)
+    IPC->>Rust: write_settings（serde default 兼容旧字段）
+    Rust-->>App: ok
+    App->>App: CSS 变量 --sidebar-width / --editor-zoom 生效
+
+    %% ===== 打包验证（B1） =====
+    User->>App: 执行 pnpm tauri build
+    App->>Rust: tauri CLI 原生二进制编译 + bundle
+    Note over Rust: 第一步 --no-bundle 验证编译链；<br/>第二步 NSIS 工具链需联网下载，离线则如实降级记录

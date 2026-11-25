@@ -1,0 +1,119 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>cm tag probe</title>
+<style>
+  body { margin: 0; font-family: Consolas, monospace; }
+  .cm-editor { height: 100vh; }
+  /* 自定义 Highlighter 会给不同节点名分配不同 class，这些 class 用 CSS 上色 */
+  .mw-HeaderMark { color: #d73a49; font-weight: 700; }
+  .mw-QuoteMark  { color: #6f42c1; font-weight: 700; }
+  .mw-ListMark   { color: #005cc5; font-weight: 700; }
+  .mw-EmphasisMark { color: #e36209; }
+  .mw-CodeMark   { color: #22863a; font-weight: 700; }
+  .mw-LinkMark   { color: #b31d28; }
+</style>
+</head>
+<body>
+<div id="editor"></div>
+<script type="module">
+import { EditorState } from "@codemirror/state";
+import { EditorView } from "@codemirror/view";
+import { markdown } from "@codemirror/lang-markdown";
+import { HighlightStyle, syntaxHighlighting, syntaxTree } from "@codemirror/language";
+import { Decoration, ViewPlugin } from "@codemirror/view";
+import { tags } from "@lezer/highlight";
+import { highlightTree } from "@lezer/highlight";
+
+// ── 实验 A：当前项目用的做法（HighlightStyle + tags.processingInstruction）
+//     观察 6 种标记符是否拿到**不同**的 class
+const styleA = HighlightStyle.define([
+  { tag: tags.processingInstruction, color: "#d73a49" },
+  { tag: tags.heading1, color: "#005cc5", fontWeight: "bold" },
+  { tag: tags.strong, fontWeight: "bold" },
+  { tag: tags.emphasis, fontStyle: "italic" },
+  { tag: tags.monospace, color: "#22863a" },
+  { tag: tags.link, color: "#b31d28" },
+]);
+
+// ── 实验 B：自定义 Highlighter，按 **lezer 节点名** 分配 class
+const MARK_CLASS = {
+  HeaderMark: "mw-HeaderMark",
+  QuoteMark: "mw-QuoteMark",
+  ListMark: "mw-ListMark",
+  EmphasisMark: "mw-EmphasisMark",
+  CodeMark: "mw-CodeMark",
+  LinkMark: "mw-LinkMark",
+};
+function customHighlighter(tree) {
+  const classes = [];
+  highlightTree(tree, (node) => {
+    const cls = MARK_CLASS[node.name];
+    if (cls) classes.push(cls);
+    return null;
+  }, (from, to, cls) => {
+    classes.push(cls);
+  });
+  return classes;
+}
+
+const doc = `# 标题1\n\n## 标题2\n\n> 引用\n\n- 列表项\n\n**粗体** *斜体* \`代码\` [链接](http://x)\n\n---\n`;
+
+function build(extra) {
+  return EditorState.create({
+    doc,
+    extensions: [markdown(), extra],
+  });
+}
+
+const stateA = build(syntaxHighlighting(styleA));
+const viewA = new EditorView({ state: stateA, parent: document.getElementById("editor") });
+
+// ── 实验 C：用 ViewPlugin + Decoration.mark 按**节点名**给标记符加 class
+//      （本项目 src/editor/code-block.ts 用的就是这套机制）
+const MARK_DECO = {
+  HeaderMark: Decoration.mark({ class: "mw-HeaderMark" }),
+  QuoteMark: Decoration.mark({ class: "mw-QuoteMark" }),
+  ListMark: Decoration.mark({ class: "mw-ListMark" }),
+  EmphasisMark: Decoration.mark({ class: "mw-EmphasisMark" }),
+  CodeMark: Decoration.mark({ class: "mw-CodeMark" }),
+  LinkMark: Decoration.mark({ class: "mw-LinkMark" }),
+};
+const markPlugin = ViewPlugin.fromClass(class {
+  constructor(view) { this.decorations = this.build(view); }
+  build(view) {
+    const decos = [];
+    syntaxTree(view.state).iterate({
+      enter: (node) => {
+        const d = MARK_DECO[node.name];
+        if (d) decos.push(d.range(node.from, node.to));
+      },
+    });
+    return Decoration.set(decos, true);
+  }
+  update(u) { if (u.docChanged || u.viewportChanged) this.decorations = this.build(u.view); }
+}, { decorations: (v) => v.decorations });
+
+const stateB = build(markPlugin);
+const viewB = new EditorView({ state: stateB, parent: document.getElementById("editor") });
+
+// 采样：每种标记符文本 → 它所在的 span 的 class 列表
+const SAMPLES = ["#", "##", ">", "-", "**", "*", "`", "["];
+function sample(view) {
+  const out = {};
+  for (const el of view.dom.querySelectorAll("span")) {
+    const t = el.textContent;
+    if (!t) continue;
+    if (SAMPLES.includes(t) && out[t] === undefined) out[t] = el.className;
+  }
+  return out;
+}
+window.__probe = {
+  a: sample(viewA),
+  b: sample(viewB),
+  aSpanCount: viewA.dom.querySelectorAll("span").length,
+  bSpanCount: viewB.dom.querySelectorAll("span").length,
+};
+window.__ready = true;
+</script>
+</body>
+</html>

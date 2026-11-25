@@ -1,0 +1,24 @@
+OK NodeView 渲染出 .code-block 容器
+OK 语言选择器存在且 ts 归一化为 typescript（实际 typescript）
+OK 代码文本正确
+OK 初始高亮：存在 hljs-keyword decoration span
+OK 文档中定位到 codeBlock
+OK 编辑事务：插入文本已反映到 DOM
+OK 编辑事务：原文本未丢失
+OK 编辑事务后高亮 decoration 仍在（核心判据）
+OK 新插入的注释被高亮为 hljs-comment
+OK select change → 节点 language 属性更新为 javascript
+OK 切换语言后高亮重建
+OK NodeView.update 同步选择器值
+OK language=null 时无高亮 span
+OK language=null 时文本完整
+OK serialize→parse→serialize 不动点（文本往返稳定）
+OK 序列化保留代码围栏
+OK 全要素：表格渲染 2 个表头单元格
+OK 全要素：表格渲染 4 个数据单元格
+OK 全要素：任务列表 2 个复选框
+OK 全要素：恰 1 个已勾选（tiptap 3 状态在 li[data-checked]）
+OK 全要素：KaTeX 行内公式已渲染
+OK 全要素：KaTeX 块级公式以 displayMode 渲染
+OK 全要素：图片按相对路径渲染
+OK 全要素：真实编辑器 serialize 不动点（文本往返稳定）

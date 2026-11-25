@@ -1,0 +1,121 @@
+OK [P1/confirm-queue] P1-1 首个确认框是「删除文件」请求
+OK [P1/confirm-queue] P1-2 队列不顶掉队首：显示的仍是第一个请求（删除） — first=删除文件×删除「B.md」？将移入 .mwtyper/trash，可恢复。取消确 now=删除文件×删除「B.md」？将移入 .mwtyper/trash，可恢复。取消确
+OK [P1/confirm-queue] P1-3 回答「删除·确定」后，正在编辑的脏标签 A 不应被连带关闭（用户从未看到它的确认框） — A 标签存在=true
+OK [P1/confirm-queue] P1-4 回答「删除·确定」后，A 的未保存状态与内容不得丢失 — A 存在=true dirty=true
+OK [P1/confirm-queue] P1-5 队首请求本身的语义必须照常生效（B.md 确实被删除） — B.md 已移除=true fs=["/demo/A.md","/demo/.mwtyper/trash/1795580403142-B.md"]
+OK [P1/confirm-queue] P1-6 队尾的「关闭 A」请求必须仍待用户单独确认（不得被队首的作答一并结算） — dialog=关闭标签×「A.md」未保存，确定关闭？取消确定
+OK [P1c/confirm-cancel] P1c-1 回答「取消」不得连带删除文件（B 未被删除） — fs=["/demo/A.md","/demo/B.md"]
+OK [P1c/confirm-cancel] P1c-2 回答「取消」不得连带关闭脏标签（A 仍在且仍为脏） — A 存在=true dirty=true
+OK [P1b/confirm-batch] P1b-1 显示的是队首（A 的关闭确认）
+OK [P1b/confirm-batch] P1b-2 同语义批量结算：一次「确定」关闭两个脏标签 — 未命名
+OK [P2/askInput-null] P2-1 重命名弹出输入框
+OK [P2/askInput-null] P2-2 被顶掉的重命名请求不得执行（null 分支必须提前返回） — calls=[]
+OK [P2/askInput-null] P2-3 后发的「写作目标」正常生效（goal_words=123） — goal=123
+OK [P2/askInput-null] P2-4 新建文件弹出输入框
+OK [P2/askInput-null] P2-5 被顶掉的「新建文件」不得创建任何文件 — files=["/demo/A.md"]
+OK [P2/askInput-null] P2-5b 被顶掉的「新建文件」不得用第二个输入框的值建文件 — files=["/demo/A.md"]
+OK [P2/askInput-null] P2-6 Ctrl+K 弹出链接输入框
+OK [P2/askInput-null] P2-7 被顶掉的链接请求不得插入链接 — <h1>A</h1><p></p>
+OK [P3/close-tab] P3-1 队首是 A 的关闭确认框 — 关闭标签×「A.md」未保存，确定关闭？取消确定
+OK [P3/close-tab] P3-2 同批结算后 A 标签被关闭 — 未命名,C.md
+OK [P3/close-tab] P3-3 同批结算后 B 标签被关闭 — 未命名,C.md
+OK [P3/close-tab] P3-4 未被关闭的 C 标签仍然存在 — 未命名,C.md
+OK [P3/close-tab] P3-5 活动标签落到未被关闭的 C 上 — active=C.md
+OK [P3/close-tab] P3-6 保留标签的 dirty 态未被误清 — dirty=false
+OK [P3/close-tab] P3-7 保留标签的编辑区内容正确 — "C"
+OK [P3/close-tab] P3-8 关闭当前激活的脏标签弹出确认框
+OK [P3/close-tab] P3-9 关闭激活标签后落到右邻居 B — active=B.md
+OK [P3/close-tab] P3-10 A、B 仍在 — 未命名,A.md,B.md
+OK [P3/close-tab] P3-11 关标签前有 2 个标签（未命名草稿 + A.md） — 未命名,A.md
+OK [P3/close-tab] P3-12 干净草稿被直接关掉 — A.md
+OK [P3/close-tab] P3-13 关闭唯一脏标签弹出确认框
+OK [P3/close-tab] P3-14 关闭最后一个标签后应恰好剩下一个标签 — 未命名
+OK [P3/close-tab] P3-15 新建的应是空白草稿「未命名」 — 未命名
+OK [P3/close-tab] P3-16 新建草稿不应是 dirty — dirty=false
+OK [P3/close-tab] P3-17 新建草稿的编辑区应为空 — ""
+OK [P3/close-tab] P3-18 标题栏应显示「未命名」 — 未命名
+OK [P3/close-tab] P3-19 关闭最后一个干净标签后新建空白草稿 — 未命名
+OK [P3/close-tab] P3-20 新建草稿的编辑区应为空 — ""
+OK [P3/close-tab] P3-6 关闭唯一脏标签弹出确认框
+OK [P3/close-tab] P3-7 关闭最后一个标签后应恰好剩下一个标签 — 未命名
+OK [P3/close-tab] P3-8 新建的应是空白草稿「未命名」 — 未命名
+OK [P3/close-tab] P3-9 新建草稿不应是 dirty — dirty=false
+OK [P3/close-tab] P3-10 新建草稿的编辑区应为空 — ""
+OK [P3/close-tab] P3-11 标题栏应显示「未命名」 — 未命名
+OK [P4/tree-keyboard] P4-1 文件树渲染出父目录与子目录 — parent=true child=true
+OK [P4/tree-keyboard] P4-2 在子目录上按 Enter 不得连带切换父目录 — parent true->true
+OK [P4/tree-keyboard] P4-3 在子目录上按 Enter 应切换子目录自身 — child true->false
+OK [P4/tree-keyboard] P4-4 在子目录上按 ArrowRight 不得连带展开父目录 — parent true->true
+OK [P4/tree-keyboard] P4-5 在子目录上按 ArrowLeft 不得连带折叠父目录 — parent true->true
+OK [P4/tree-keyboard] P4-6 ArrowLeft 未让子目录处于错误的展开态 — child true->false
+OK [P4/tree-keyboard] P4-7 在子目录上按 Space 不得连带切换父目录 — parent true->true
+OK [P4/tree-keyboard] P4-8 在子目录上按 Space 应切换子目录自身 — child false->true
+OK [P4/tree-keyboard] P4-9 子 treeitem 的最近 treeitem 祖先是父 treeitem — ancestor=父目录
+OK [P4/tree-keyboard] P4-10 子树被包在 role=group 容器内
+OK [P5/accent-contrast] P5-1 .statusbar .goal-fill 用 --accent 作背景色
+OK [P5/accent-contrast] P5-2 goal-fill 填充色相对轨道背景 ≥3:1（WCAG 1.4.11） — 4.63:1
+OK [P5/accent-contrast] P5-3 复选框用 accent-color: var(--accent)
+OK [P5/accent-contrast] P5-4 复选框上的对勾(白)相对 --accent 填充 ≥4.5:1 — 5.73:1
+OK [P5/accent-contrast] P5-5 链接文字 --accent 在编辑底上 ≥4.5:1 — 5.73:1
+OK [P5/accent-contrast] P5-6 大纲激活项 --accent 在侧栏底上 ≥4.5:1 — 5.07:1
+OK [P5/accent-contrast] P5-7 所有用 --accent 画的边框/焦点环在任一底色上都 ≥3:1 — min=5.07
+OK [P5/accent-contrast] P5-8 深色主题的 --accent 文字色同样达 AA — 7.99:1
+OK [P7/known-dirs] P7-1 文件树渲染出目录一
+OK [P7/known-dirs] P7-2 新目录默认展开 — expanded=true
+OK [P7/known-dirs] P7-3 嵌套子目录也被渲染（默认展开）
+OK [P7/known-dirs] P7-4 用户手动折叠后 aria-expanded=false
+OK [P7/known-dirs] P7-5 用户手动折叠的目录在 refreshTree 之后不得被重新展开 — expanded=false
+OK [P7/known-dirs] P7-6 用户手动展开生效
+OK [P7/known-dirs] P7-7 用户手动展开的目录在 refreshTree 之后不得被折叠 — expanded=true
+OK [N7/promise-settle] N7-0 第一次「写作目标」弹出输入框
+OK [N7/promise-settle] N7-1 第二个输入框不沿用上次的文本 — value=0
+OK [N7/promise-settle] N7-2 旧 askInput 请求必须以 null 结算（不得永远悬空） — nullSettled=1
+OK [N7/promise-settle] N7-2b 与 askInput 相关的 Promise 不得处于悬空状态 — dangling=0/2
+OK [N7/promise-settle] N7-3 最终 goal_words 来自后一次请求（222） — goal=222
+OK [N7/promise-settle] N7-4 只有最后一次请求生效（222 不得写入、111 不得残留） — goal=333
+OK [N7/promise-settle] N7-5 第一次未被顶掉的请求正常生效（111） — goal=111
+OK [N7/promise-settle] N7-6 被顶掉的请求没有以任何形式写进设置（无残留、无覆盖） — goal=333
+OK [P6/palette-aria] P6-1 单独打开时命令面板是 aria-modal=true — aria-modal=true
+OK [P6/palette-aria] P6-2 单独打开时只有一个 aria-modal 浮层 — count=1
+OK [P6/palette-aria] P6-2b 命令面板已关闭 — palette=false
+OK [P6/palette-aria] P6-2c A.md 已变脏（后续关闭会弹确认框） — dirty=true
+OK [P6/palette-aria] P6-2d 关闭脏标签弹出确认框 — 关闭标签×「A.md」未保存，确定关闭？取消确定
+OK [P6/palette-aria] P6-3 确认框是模态浮层 — count=1
+OK [P6/palette-aria] P6-3b 命令面板确实叠加在确认框之上
+OK [P6/palette-aria] P6-4 叠在确认框之上时命令面板降级为 aria-modal=false — aria-modal=false
+OK [P6/palette-aria] P6-5 叠在确认框之上时全屏仍只有一个 aria-modal 浮层 — count=1
+OK [P6/palette-aria] P6-6 降级后仍保留 role=dialog
+OK [P6/palette-aria] P6-7 降级后仍保留可访问名 — 命令面板
+OK [P6/palette-aria] P6-8 降级后命令面板仍然可正常筛选命令 — items=1
+OK [P6/palette-aria] P6-9 面板已关闭 — palette=false
+OK [P6/palette-aria] P6-10 面板关闭后确认框仍然存在且未被顶掉 — 关闭标签×「A.md」未保存，确定关闭？取消确定
+OK [P6/palette-aria] P6-11 确认框仍能正常作答（脏标签被关闭） — 未命名
+OK [P6/palette-aria] P6-12 历史面板列出了快照 — items=2
+OK [P6/palette-aria] P6-13 快照详情弹窗是 aria-modal=true 的浮层 — count=1
+OK [P6/palette-aria] P6-14 命令面板叠加在快照详情之上
+OK [P6/palette-aria] P6-15 非 App 托管的模态叠加时，命令面板靠 DOM 兜底探针降级 — aria-modal=false
+OK [P6/palette-aria] P6-16 叠加时全屏仍只有一个 aria-modal 浮层 — count=1
+OK [P8/saveas-tab] P8-1 另存为应新增一个标签 — 未命名,A.md,副本1.md
+OK [P8/saveas-tab] P8-2 新标签承载新文件 — 未命名,A.md,副本1.md
+OK [P8/saveas-tab] P8-3 源标签仍然保留 — 未命名,A.md,副本1.md
+OK [P8/saveas-tab] P8-4 源标签的 dirty 状态不被另存为清掉 — dirty=true
+OK [P8/saveas-tab] P8-5 新标签不是 dirty — dirty=false
+OK [P8/saveas-tab] P8-6 另存为后活动标签切到新标签 — active=副本1.md
+OK [P8/saveas-tab] P8-6b 另存为把内容写到了新路径 — ["/demo/A.md","/demo/B.md","/demo/副本1.md"]
+OK [P8/saveas-tab] P8-6c 另存为不得改动源文件（源路径内容保持原样） — "# A\n"
+OK [P8/saveas-tab] P8-7 每次另存为各开一个新标签（数量线性，不丢也不多） — 未命名,A.md,副本1.md,副本2.md,副本3.md,副本4.md
+OK [P8/saveas-tab] P8-9 另存为已进入「选择路径」等待态 — release=true
+OK [P8/saveas-tab] P8-10 另存为仍只新增一个标签（未命名 + A.md + 副本1.md） — 未命名,A.md,副本1.md
+OK [P8/saveas-tab] P8-11 内容在保存期间又变了 → 活动标签不得被新标签抢走 — active=A.md
+OK [P8/saveas-tab] P8-12 源标签仍为 dirty（未落盘的内容不得被清零） — dirty=true
+OK [P8/saveas-tab] P8-13 源标签的编辑区内容保留用户后续输入 — "MOREDIRTY_AA"
+OK [P8/saveas-tab] P8-14 新文件按「保存发起瞬间」的文本落盘（等待期间的后续输入不得混入） — "# DIRTY_AA\n\n"
+OK [P9/known-dirs-workspace] P9-1 初始目录默认展开
+OK [P9/known-dirs-workspace] P9-2 用户手动折叠生效
+OK [P9/known-dirs-workspace] P9-3 用户手动折叠的状态在侧栏页签切换后仍应保留（FileTree 重挂载不得丢失用户意图） — expanded=false
+OK [P9/known-dirs-workspace] P9-3b 手动折叠生效
+OK [P9/known-dirs-workspace] P9-3c 折叠并重新展开侧栏后，用户手动折叠的状态仍应保留 — expanded=false
+OK [P9/known-dirs-workspace] P9-4 /demo 的目录默认展开
+OK [P9/known-dirs-workspace] P9-5 手动折叠 /demo/目录一 生效
+OK [P9/known-dirs-workspace] P9-6 切换工作区后，新工作区里的同名目录应默认展开（knownDirsRef 以绝对路径为键，不串味） — expanded=true
+OK [P9/known-dirs-workspace] P9-7 切回原工作区时，用户此前的手动折叠应被保留 — expanded=false

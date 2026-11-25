@@ -1,0 +1,12 @@
+/* 青瓷 —— 冷润的青灰绿调，长时间阅读不刺眼（MWTyper 内置示例主题） */
+:root {
+  --mw-base-bg: #f1f5f3;
+  --mw-base-fg: #22322c;
+  --mw-base-accent: #1f6f5c;
+}
+
+[data-theme="dark"] {
+  --mw-base-bg: #16201d;
+  --mw-base-fg: #d6e3de;
+  --mw-base-accent: #4fbf9f;
+}

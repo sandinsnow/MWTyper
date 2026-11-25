@@ -1,0 +1,12 @@
+/* 暮紫 —— 淡紫灰底 + 紫罗兰强调色（MWTyper 内置示例主题） */
+:root {
+  --mw-base-bg: #f4f2f8;
+  --mw-base-fg: #2f2a3d;
+  --mw-base-accent: #6d4aa8;
+}
+
+[data-theme="dark"] {
+  --mw-base-bg: #1c1a26;
+  --mw-base-fg: #ddd8ea;
+  --mw-base-accent: #b39ae0;
+}

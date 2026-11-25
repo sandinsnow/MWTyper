@@ -1,0 +1,71 @@
+OK [A/D1] D1-0 空 App 挂载成功（tiptap 实例已创建，@tauri-apps/api/window 顶层 import 无副作用）
+OK [A/D1] D1-0b 挂载过程未触发原生弹窗
+OK [A/D1] D1-1 A/B 两个标签已就绪（当前为 B） — B
+OK [A/D1] D1-2 标签栏同时存在 A.md 与 B.md — 未命名,A.md,B.md
+OK [A/D1] D1-3 切回 A，编辑器内容为 A — A
+OK [A/D1] D1-4 A 中已输入 UNIQUE_A — UNIQUE_AA
+OK [A/D1] D1-5 A 标签 dirty 点亮
+OK [A/D1] D1-6 切到 B 后 B 的内容不含 UNIQUE_A — B
+OK [A/D1] D1-7 切回 A 后 A 的文本仍含 UNIQUE_A（核心判据） — UNIQUE_AA
+OK [A/D1] D1-8 切回 A 后 dirty 态仍正确
+OK [A/D1] D1-9 二次切到 B，B 仍不含 UNIQUE_A（stash 未串位） — B
+OK [A/D1] D1-10 二次切到 B，B 内容为其自身 — B
+OK [A/D1-newFile] D1-10 newFile 后新文档为空（未串入 A 的编辑）
+OK [A/D1-newFile] D1-11 newFile 后切回 A，A 文本仍含 UNIQUE_A — UNIQUE_AA
+OK [A/D1-openFile] D1-12 openFile 打开 C 后 C 内容不含 UNIQUE_A — C
+OK [A/D1-openFile] D1-13 openFile 后切回 A，A 文本仍含 UNIQUE_A — UNIQUE_AA
+OK [B/D3] D3-1 A 已变脏
+OK [B/D3] D3-2 切标签时调用了 clearTimeout（定时器被清理） — clearCalls=3
+OK [B/D3] D3-3 切走期间 A 的 dirty 态在 tab state 中保留
+OK [B/D3] D3-4 B 的文件未被错写 A 的内容 — # B
+
+OK [B/D3] D3-5 A 的定时保存被取消（切走后未误触发） — # A
+
+OK [B/D3] D3-6 切回 A 后 autosave 落盘，A 文件含 UNIQUE_A — # UNIQUE_AA
+
+
+OK [B/D3] D3-7 B 的文件始终未被错写 — # B
+
+OK [B/D3] D3-8 落盘后 A 的 dirty 态清除
+OK [B/D3-flush] D3c-1 仅 dirty && 有 path 的标签被 flush（2 个） — calls=2
+OK [B/D3-flush] D3c-2 活动标签使用 currentText() 实时文本 — got=LIVE_A
+OK [B/D3-flush] D3c-3 非活动标签使用 stash 快照 — got=SNAP_B
+OK [B/D3-flush] D3c-4 无 path 的草稿被跳过
+OK [B/D3-flush] D3c-5 干净标签未被 flush
+OK [B/D3-flush] D3c-6 每个 dirty 标签恰好被落盘一次
+OK [B/find] FIND-1 computeMatches 命中数与独立朴素参照一致 — got=2 ref=2
+OK [B/find] FIND-6 每个命中的区间文本精确等于 target（位置精确性） — matches=2 bad=0 badRanges=[]
+OK [B/find] FIND-7 computeMatches 命中数为 2 且非空 — got=2
+OK [B/find] FIND-2 find meta 后插件状态含 2 个命中 — matches=2
+OK [B/find] FIND-3 命中产生 .find-match 高亮装饰 — count=2
+OK [B/find] FIND-4 全部替换后文档中不再有 target — 标题一段落 X 文本 X。
+OK [B/find] FIND-5 全部替换写入了替换文本 — 标题一段落 X 文本 X。
+OK [C/D2] D2-1 纯 meta 事务（mwtyperFocusToggle）不触发 App 顶层渲染 — renders 6 → 6
+OK [C/D2] D2-2 选区移动仍触发 App 顶层渲染（大纲当前节高亮依赖） — renders 6 → 7
+OK [C/D2] D2-3 find meta 仍触发 App 顶层渲染（x/y 计数依赖） — renders 7 → 8
+OK [C/D2] D2-4 打字（docChanged）仍触发 App 顶层渲染 — renders 8 → 9
+OK [C/D2] D2-5 大纲列出标题 — count=2
+OK [C/D2] D2-6 大纲当前节高亮跟随选区刷新（未冻结） — 标题二
+OK [C/D2] D2-7 查找栏已打开
+OK [C/D2] D2-8 FindReplaceBar 的 x/y 命中计数未冻结 — count=1/1 inputValue="正文" pluginQuery="正文" matches=1 docHasTarget=true docLen=18
+OK [D/a11y] D-a11y-1 设置浮层有 role=dialog + aria-modal=true
+OK [D/a11y] D-a11y-2 命令面板浮层有 role=dialog + aria-modal=true
+OK [D/a11y] D-a11y-3 侧栏四个页签有 role=tab — count=4
+OK [D/a11y] D-a11y-4 侧栏页签均有 aria-selected
+OK [D/a11y] D-a11y-5 侧栏内容区有 role=tabpanel
+OK [D/a11y] D-a11y-6 文件树行有 role=treeitem — count=3
+OK [D/a11y] D-a11y-7 文件树行有 tabindex（键盘可达）
+OK [D/a11y] D-a11y-8 目录行有 aria-expanded
+OK [D/a11y] D-a11y-9 搜索面板开关有 aria-pressed — count=3
+OK [D/a11y] D-a11y-10 查找栏开关有 aria-pressed — count=2
+OK [D/css] D-css-1 存在 :focus-visible 焦点环规则
+OK [D/css] D-css-2 存在 prefers-reduced-motion 媒体查询
+OK [D/css] D-css-3 存在 --accent-strong 对比度 token
+OK [D/css] D-css-4 存在响应式断点 @media (max-width)
+OK [D/css] D-css-5 diff 增删色已抽为变量
+OK [D/gate] D-gate-1 m1-editor 的 B2 期望值不再用被测函数 computeMatches 自参照
+OK [D/gate] D-gate-2 B2 查找闸门含「命中数非空」检查 — 扫描文件=m1-editor.ts
+OK [D/gate] D-gate-3 find-replace 的 descendants 守卫不返回 false（E01 根因已修）
+OK [D/gate] D-gate-4 其余 descendants 调用点均未误用 return false（find-replace 由 D-gate-3 覆盖） — offenders=
+OK [D/gate] D-gate-5 闸门不读 d.spec.class 取 class（改读 type.attrs.class）
+OK [D/gate] D-gate-6 code-block 的 Decoration.inline 把 class 放在 attrs 位 — bad=0

@@ -1,0 +1,17 @@
+/* 暖阳 —— 温润的米黄纸感 + 琥珀强调色（MWTyper 内置示例主题）
+ *
+ * 写法说明：只声明**基色**，系统据此推导出整套界面配色（标题栏 / 侧栏 / 状态栏 /
+ * 编辑区 / 代码块 / 查找高亮 / 标记符…），并自动做深浅配比与对比度兜底。
+ * 每套主题都显式给出浅色（:root）与深色（[data-theme="dark"]）两组基色。
+ */
+:root {
+  --mw-base-bg: #fbf1d8;
+  --mw-base-fg: #4a4235;
+  --mw-base-accent: #b58900;
+}
+
+[data-theme="dark"] {
+  --mw-base-bg: #241f18;
+  --mw-base-fg: #e8dfd0;
+  --mw-base-accent: #e0b155;
+}

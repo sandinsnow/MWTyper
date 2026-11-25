@@ -1,0 +1,104 @@
+OK [A/D1-edge] A-0 三个文件各自成为独立标签（未命名草稿标签同时存在） — 未命名,A.md,B.md,C.md
+OK [A/D1-edge] A-1 C 中只有 MARK_C（未串入 A 的标记） — MARK_CC
+OK [A/D1-edge] A-2 快速连切后每个标签内容仍是自己的（首轮 A/B/C） — A.md:MARK_AA | B.md:MARK_BB | C.md:MARK_CC
+OK [A/D1-edge] A-3 快速连切第二轮仍然一一对应（无串位） — A.md:MARK_AA | B.md:MARK_BB | C.md:MARK_CC
+OK [A/D1-edge] A-4 快速连切中未出现跨标签内容互串 — A.md:MARK_AA | B.md:MARK_BB | C.md:MARK_CC | A.md:MARK_AA | B.md:MARK_BB | C.md:MARK_CC
+OK [A/D1-edge] A-5 关闭 dirty 标签弹出确认对话框
+OK [A/D1-edge] A-6 取消关闭后 C 标签仍在
+OK [A/D1-edge] A-7 取消关闭后 C 的内容未被清空 — MARK_CC
+OK [A/D1-edge] A-8 取消关闭后 C 仍为 dirty
+OK [A/D1-edge] A-9 确认关闭后 C 标签消失
+OK [A/D1-edge] A-10 关闭当前标签后激活的是相邻的 B — B.md
+OK [A/D1-edge] A-11 关闭后 B 的内容是 B 自己的 — MARK_BB
+OK [A/D1-edge] A-12 A 已变脏
+OK [A/D1-edge] A-13 从文件树重新打开已 dirty 的 A → 激活 A — A.md
+OK [A/D1-edge] A-14 重新打开已 dirty 的 A 未丢失未保存内容 — MARK_A2MARK_AA
+OK [A/D1-edge] A-15 重新打开后 A 仍为 dirty（未被当作干净文件重载）
+OK [B/save-race] B-1 A 已变脏
+OK [B/save-race] B-2 已发起对 A 的保存 — [{"path":"/demo/A.md","content":"# MARK_A_DIRTYA\n\n"}]
+OK [B/save-race] B-3 保存进行中已切换到 B — B.md
+OK [B/save-race] B-4 保存完成后标题栏仍显示当前标签 B（B.md）而非被保存的 A.md — title=B.md active=B.md
+OK [B/save-race] B-5 B 仍有未保存内容时状态栏不应显示「已保存」 — 字数 3字符 13约 1 分钟本次 +0 字 · 0 分钟所见即所得未保存
+OK [B/save-race] B-6 保存 B 时不得把 B 的内容写进 A.md（跨标签落盘） — A.md="# MARK_A_DIRTYA\n\n" B.md="# MARK_B_DIRTYB\n\n"
+OK [B/save-race] B-7 B 的内容应落到 B.md — B.md="# MARK_B_DIRTYB\n\n"
+OK [B/save-race] B-8 A.md 仍保有 A 自己的内容 — A.md="# MARK_A_DIRTYA\n\n"
+OK [B/saveas-race] B2-1 「另存为」对话框期间已切换到 B — B.md
+OK [B/saveas-race] B2-2 「另存为」完成后标题栏应仍显示当前标签 B — title=B.md active=B.md
+OK [B/saveas-race] B2-3 「另存为」不得把 B 标签的 dirty 态清掉（B 仍有未保存编辑） — tabNames=未命名,A.md,B.md,Saved.md
+OK [B/saveas-race] B2-4 「另存为」不得把 B 标签改名为 Saved.md — tabNames=未命名,A.md,B.md,Saved.md
+OK [B/save-during] B3-1 A 已变脏
+OK [B/save-during] B3-2 保存期间继续输入，dirty 应保持
+OK [B/save-during] B3-3 落盘内容应只含保存发起时的文本（FIRST），不含之后的输入 — A.md="# FIRSTA\n\n"
+OK [B/save-during] B3-4 保存完成后仍存在未落盘的新输入，dirty 必须保持（不得被清零） — dirtyDot=true status=字数 1字符 12约 1 分钟本次 +0 字 · 0 分钟所见即所得未保存
+OK [B/save-during] B3-5 状态栏不得显示「已保存」（实际有未落盘内容） — 字数 1字符 12约 1 分钟本次 +0 字 · 0 分钟所见即所得未保存
+OK [H/restore-race] H-1 历史面板列出了 A 的快照 — items=1
+OK [H/restore-race] H-2 快照详情弹窗有「恢复此版本」按钮
+OK [H/restore-race] H-3 恢复快照前有确认弹窗
+OK [H/restore-race] H-4 恢复流程进行中已切换到 B — B.md
+OK [H/restore-race] H-5 恢复流程结束后编辑区应仍是 B 的内容（不得被 A 的快照替换） — editor=B
+OK [H/restore-race] H-6 恢复流程结束后标题栏应仍显示 B.md — title=B.md active=B.md
+OK [H/restore-race] H-7 切到 B 后 B 的内容不得被 A 的编辑内容覆盖 — editor=B
+OK [D/autosave-timer] D-1 自动保存不得把 B 的内容写进 A.md — A.md="# A\n" B.md="# MARK_B_AUTOB\n\n"
+OK [D/autosave-timer] D-2 自动保存不得把 A 的内容写进 B.md — A.md="# A\n" B.md="# MARK_B_AUTOB\n\n"
+OK [D/autosave-timer] D-3 B 的自动保存应把 B 的内容写进 B.md — B.md="# MARK_B_AUTOB\n\n"
+OK [D/autosave-timer] D-4 切回脏标签 A 后应重新排程自动保存并把 A 的内容落盘 — A.md="# MARK_A_AUTOA\n\n"
+OK [D/autosave-timer] D-5 切回 A 后的自动保存不得污染 B.md — B.md="# MARK_B_AUTOB\n\n"
+OK [C/flush-iso] C-1 单个标签保存抛错时 flushAllDirty 的 Promise 不得 reject（否则关窗流程中断）
+OK [C/flush-iso] C-2 出错标签之后的脏标签仍被落盘 — calls=3 [{"path":"/demo/A.md","text":"LIVE"},{"path":"/demo/B.md","text":"SNAP_B"},{"path":"/demo/C.md","text":"SNAP_C"}]
+OK [C/flush-iso] C-3 出错点之后的 C.md 依然落盘
+OK [C/flush-iso] C-4 无 path 的草稿仍未被 flush
+OK [D/modal-race] D-0 A、B 均已变脏
+OK [D/modal-race] D-1 初始只有一个模态浮层 — count=1
+OK [D/modal-race] D-2 模态浮层打开时不应再叠加第二个 aria-modal 浮层 — dialogs=1
+OK [D/modal-race] D-3 （记录）命令面板确实在模态之上被打开
+OK [D/modal-race] D-4 第二个确认请求不应顶掉第一个尚未回答的确认请求（否则第一个 Promise 被孤儿化） — dialogText=关闭标签×「A.md」未保存，确定关闭？取消确定
+OK [D/modal-race] D-5 同一时刻不应并存两个确认浮层 — dialogs=1
+OK [D/modal-race] D-6 被回答的确认框对应的 B 标签已关闭 — 未命名
+OK [D/modal-race] D-7 先前那个被顶掉的关闭请求也应完成（A 也应被关闭，不能被静默丢弃） — tabNames=未命名
+OK [D/modal-race] D-8 写作目标弹出输入框
+OK [D/modal-race] D-9 第二个输入请求不得沿用上一个输入框里已输入的文本（新弹窗应显示自己的默认值） — value="0"
+OK [D/modal-race] D-10 队首是「删除文件」确认框 — 删除文件×删除「B.md」？将移入 .mwtyper/trash，可恢复。取消确定
+OK [D/modal-race] D-11 第二个确认请求不得顶掉队首（两个请求应共存于队列中） — dialogs=1
+OK [D/modal-race] D-12 回答「删除·确定」后，队首的删除语义必须照常生效（B.md 被移入回收站） — ["/demo/A.md","/demo/.mwtyper/trash/1795580390996-B.md"]
+OK [D/modal-race] D-13 回答「删除·确定」后，用户从未看到其确认框的脏标签 A 不得被连带关闭 — 未命名,A.md,未命名
+OK [D/modal-race] D-13b 被连带关闭的标签其未保存状态与内容也不得丢失 — dirty=true tabs=未命名,A.md,未命名
+OK [D/modal-race] D-13c 队尾的「关闭 A」请求必须仍待用户单独确认（不得被队首的作答一并结算） — 关闭标签×「A.md」未保存，确定关闭？取消确定
+OK [E/a11y-sem] E-1 侧栏内容区 role=tabpanel 存在
+OK [E/a11y-sem] E-2 每个 role=tab 都应通过 aria-controls 指向其 tabpanel — missing=
+OK [E/a11y-sem] E-3 tabpanel 应通过 aria-labelledby 回指当前 tab — aria-labelledby=sb-tab-files
+OK [E/a11y-sem] E-4 找到目录行
+OK [E/a11y-sem] E-5 目录 treeitem 带 aria-expanded — aria-expanded=true
+OK [E/a11y-sem] E-6 treeitem 的子节点应嵌套在父 treeitem（或其 role=group）内，否则读屏无法获知层级 — childNested=true childParentRole=group
+OK [E/a11y-sem] E-7 折叠/展开目录后 aria-expanded 真值翻转且子树随之出现或消失（语义与视觉一致） — before=true/true after=false/false
+OK [E/a11y-sem] E-8 再次点击后 aria-expanded 回到初始值 — initial=true now=true
+OK [E/a11y-sem] E-12 子树必须被包在 role=group 的容器内（ARIA tree 层级容器） — groupRole=group parentRole=group
+OK [E/a11y-sem] E-13a 用户手动折叠后 aria-expanded=false — expanded=false
+OK [E/a11y-sem] E-13b 用户手动折叠的状态在侧栏页签切换（FileTree 重挂载）后必须保留 — expanded=false
+OK [E/a11y-sem] E-9 role=dialog 落在含标题与按钮的浮层容器本体上 — title=true buttons=true
+OK [E/a11y-sem] E-10 模态浮层有可访问名（aria-labelledby / aria-label）
+OK [E/a11y-sem] E-11 设置浮层已关闭
+OK [F/css] F-0 :root 含 --accent / --accent-strong
+OK [F/css] F-1 --accent-strong 已用于多处激活态 — uses=15
+OK [F/css] F-2 --accent-strong 在编辑底色上达到 WCAG AA 4.5:1 — ratio=5.48 (#047857 on #ffffff)
+OK [F/css] F-3 --fg-dim 在侧栏底色上达到 AA 4.5:1（U05 已修） — ratio=5.29 (#5b6472 on #f0f1f3)
+OK [F/css] F-4 （记录）编辑区链接确实仍用 --accent
+OK [F/css] F-5 编辑区链接色 --accent 在编辑底色上应达 AA 4.5:1 — ratio=5.73 (#0a754d on #ffffff)
+OK [F/css] F-6 大纲当前项 --accent 在侧栏底色上应达 AA 4.5:1 — ratio=5.07 (#0a754d on #f0f1f3)
+OK [F/css] F-7 选中态指示器（侧栏页签下边框）--accent 对比度应 ≥3:1（WCAG 1.4.11 非文本对比） — ratio=5.07
+OK [F/css] F-8 焦点环 --accent 在编辑底色上应 ≥3:1（WCAG 2.2 焦点指示器非文本对比） — ratio=5.73
+OK [F/css] F-9 reduced-motion 采用通配兜底规则 — @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none
+OK [F/css] F-10 存在 transition/animation 声明（需要 reduced-motion 覆盖） — transition=3 animation=1
+OK [F/css] F-11 所有 transition 声明都落在元素选择器上（可被通配兜底覆盖） — rules=3 decls=3
+OK [F/css] F-12 所有用 --accent 画的焦点指示器都应达 3:1（WCAG 2.2 焦点可见） — focusRules=7
+OK [G/stats] G-1 当前标签 B 的状态栏字数为 4 — words=4 (字数 4字符 4约 1 分钟本次 +0 字 · 0 分钟所见即所得已保存)
+OK [G/stats] G-2 切到 A 后状态栏字数变为 1（未停留在 B 的 4） — words=1 (字数 1字符 1约 1 分钟本次 +0 字 · 0 分钟所见即所得已保存)
+OK [G/stats] G-3 切标签后「本次 +N 字」基线归零 — added=0
+OK [G/stats] G-4 在 A 中新增 2 个词后字数为 3 — words=3 (字数 3字符 10约 1 分钟本次 +2 字 · 0 分钟所见即所得未保存)
+OK [G/stats] G-5 「本次 +N 字」等于本次新增的 2 个词 — added=2
+OK [G/stats] G-6 快速连切后字数属于当前标签 A（3 词，而非 B 的 4 词） — words=3 (字数 3字符 10约 1 分钟本次 +0 字 · 0 分钟所见即所得未保存)
+OK [G/session-base] G2-1a 在 A 中输入 1 个词后字数为 2 — words=2 (字数 2字符 4约 1 分钟本次 +1 字 · 0 分钟所见即所得未保存)
+OK [G/session-base] G2-1b 在 A 中输入 1 个词后「本次 +1 字」 — added=1 words=2
+OK [G/session-base] G2-2 切回 A 后「本次 +N 字」基线应按 A 重置为 0 — added=0 words=2
+OK [G/session-base] G2-3 切回后再输入 1 个词，「本次 +N 字」应为 +1（基线未被旧请求污染） — added=1 words=3
+OK [G/stats-latency] G3-1 慢响应下字数仍应正确统计为 2 — words=2 (字数 2字符 4约 1 分钟本次 +1 字 · 0 分钟所见即所得未保存) calls=["# A\n","#  ONE A\n\n"]
+OK [G/stats-latency] G3-2 基线应取「装载缓冲时」的字数（1），慢响应不得把基线推到编辑之后 — added=1 words=2 calls=["# A\n","#  ONE A\n\n"]
