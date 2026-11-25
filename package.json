@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "typecheck": "tsc --noEmit",
-    "test": "npm run test:spike && npm run test:gates",
+    "test": "pnpm run test:spike && pnpm run test:gates",
     "test:spike": "tsx spikes/roundtrip.ts && tsx spikes/m1-ipc.ts && tsx spikes/m1-editor.ts && tsx spikes/nodeview-dom.ts",
     "test:gates": "tsx spikes/audit3.ts && tsx spikes/qa4-probe.ts && tsx spikes/regression.ts && tsx tests/spikes/editor-probe.ts && tsx tests/spikes/editor-probe2.ts && tsx tests/spikes/editor-probe3.ts && tsx tests/spikes/verify-qa.ts && tsx tests/spikes/serde-spotcheck.ts && tsx tests/spikes/serde-probe.ts",
     "test:browser": "node tests/browser/source-style-probe.cjs && node tests/browser/theme-set-probe.cjs && node tests/browser/titlebar-probe.cjs && node tests/browser/menubar-probe.cjs && node tests/browser/help-probe.cjs && node tests/browser/split-probe.cjs && node tests/browser/focus-type-probe.cjs && node tests/browser/focus-type-probe2.cjs && node tests/browser/focus-mode-probe.cjs && node tests/browser/placeholder-probe.cjs && node tests/browser/winbtn-probe.cjs && node tests/browser/ui-probe.cjs",

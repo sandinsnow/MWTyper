@@ -50,7 +50,11 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # 必须 ≥ 22.15：jsdom@31 传递依赖 undici@8，而 undici 8 在加载时
+          # 会调用 zlib.createZstdDecompress —— 该 API 自 Node 22.15 才提供。
+          # 用 Node 20 时 jsdom 一被 require 就抛
+          # "TypeError: Cannot read properties of undefined (reading 'bind')"。
+          node-version: 24
           cache: pnpm
 
       - name: Setup Rust

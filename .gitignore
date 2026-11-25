@@ -24,3 +24,6 @@ Thumbs.db
 .vscode/
 .idea/
 *.tsbuildinfo
+
+# ── 推送脚本的断点续传缓存 ────────────────────────────────────────────
+scripts/.push-cache.json
