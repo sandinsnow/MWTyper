@@ -114,3 +114,7 @@ onlyBuiltDependencies:
   - esbuild
 allowBuilds:
   esbuild: true
+# rollup 是 vite 的传递依赖：钉住版本，保证 lockfile 记录的原生二进制
+# 与本地/CI 实测版本一致（不随 pnpm update 漂到次版本）。
+overrides:
+  rollup: 4.52.2

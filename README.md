@@ -86,7 +86,7 @@ pnpm tauri build --no-bundle
 
 构建产物：`src-tauri/target/release/mwtyper.exe`（已内嵌前端资源与图标，重命名后即可作为 `MWTyper.exe` 分发）。
 
-> 本项目采用**单文件交付**：`tauri.conf.json` 里 `bundle.active` 置为 `false`，`tauri build` 会跳过打包阶段，**不产安装包**。NSIS 配置仍保留在文件中，改回 `true` 即可恢复安装器打包。
+> 本项目采用**单文件交付**：`src-tauri/tauri.conf.json` 里 `bundle.active` 置为 `false`，`tauri build` 会跳过打包阶段，**不产安装包**。NSIS 配置仍保留在文件中，改回 `true` 即可恢复安装器打包。
 
 ### 运行测试
 
@@ -109,6 +109,13 @@ pnpm test:browser
 | 里程碑探针 | `spikes/m1-editor.ts`（73 断言）、`spikes/m1-ipc.ts`、`spikes/roundtrip.ts`、`spikes/nodeview-dom.ts` | 不动点 + 全要素 |
 | 编辑器专项 | `tests/spikes/editor-probe.ts` / `2` / `3`、`verify-qa.ts`、`serde-probe.ts`、`serde-spotcheck.ts` | 11 / 6 / 18 / 14 / 55 / 23 项 |
 | 真实浏览器（Chromium） | `tests/browser/*.cjs` | 263 项断言 + 若干取证脚本 |
+| 变异注入反证 | `tests/falsify/run-falsify.mjs` | 5 类变异全部被捕获 |
+| 路径可移植性守卫 | `tests/check-hardcoded-paths.mjs` | 扫描 107 个文件 |
+
+> **路径守卫**：`tests/check-hardcoded-paths.mjs` 会在 `pnpm test` 的**第一步**扫描可执行文件，
+> 拒绝任何写死的本机绝对路径（本机项目路径、家目录）。这条守卫来自一个真实教训 ——
+> 探针里写死 `const ROOT = "D:/PROJECT/MWTyper"`，本机跑得好好的，换到 CI runner 就 ENOENT。
+> 守卫自己的模式串也写成拼接形式，否则它会把自己源码判成违规（自己抓自己）。
 
 浏览器闸门需要 Playwright 与 Chromium。脚本会自动探测本机已有的 Playwright 安装（项目 `node_modules`、环境变量 `PLAYWRIGHT_CORE_PATH` / `PLAYWRIGHT_CHROMIUM_EXE`、或 WorkBuddy 自带发行版）；都没有时执行：
 
@@ -187,10 +194,12 @@ src-tauri/               # Rust 后端
   src/app.rs             # 应用信息、更新清单
 tests/
   spikes/                # jsdom 闸门（无浏览器依赖）
-  browser/               # 真实浏览器闸门（Playwright + Chromium）
+  browser/               # 真实浏览器闸门（Playwright + Chromium）+ pw.cjs 运行时定位
+  falsify/               # 变异注入反证工具（run-falsify.mjs）+ 大目录保护探针
+  check-hardcoded-paths.mjs  # 路径可移植性静态守卫
 spikes/                  # 里程碑探针与 QA 独占资产
 examples/themes/         # 5 套内置主题（深浅各一套）
-scripts/                 # CI 辅助（latest.json 生成）
+scripts/                 # CI 辅助（latest.json 生成、GitHub API 推送）
 docs/                    # 系统设计、类图/时序图、历轮审查与验收报告
 SPEC.md                  # 完整产品与技术规格（活文档，含决策记录与变更记录）
 ```

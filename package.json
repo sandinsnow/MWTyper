@@ -39,7 +39,7 @@
     "@tiptap/pm": "3.22.1",
     "@tiptap/starter-kit": "3.22.1",
     "codemirror": "6.0.2",
-    "dompurify": "^3.4.18",
+    "dompurify": "3.4.18",
     "highlight.js": "11.11.1",
     "katex": "0.16.25",
     "prosemirror-tables": "1.8.1",
